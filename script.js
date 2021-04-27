@@ -1,6 +1,5 @@
 const board_border = 'black';
 const board_background = "white";
-const snake_border = 'darkblue';
 
 const colors = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange", "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
 
@@ -18,6 +17,9 @@ var my_snake_col;
 // food position
 var food_x;
 var food_y;
+
+// color of food (it will be in rainbow mode)
+var foodColor = 0;
 
 // current player score
 var score = 0;
@@ -97,7 +99,8 @@ function waitForChooseName() {
   }
   
   // name set successfully, we can run the game now
-  
+  // if player disconnect, remove data
+  firebase.database().ref("snake/players/" + name).onDisconnect().remove();
   
   // generate random color for us
   my_snake_col = getRandomColor();
@@ -150,10 +153,27 @@ function clear_board() {
 }
 
 function drawFood() {
-  snakeboard_ctx.fillStyle = 'lightgreen';
-  snakeboard_ctx.strokestyle = 'darkgreen';
+  snakeboard_ctx.fillStyle = currentFoodColor();
+  snakeboard_ctx.strokestyle = 'black';
   snakeboard_ctx.fillRect(food_x, food_y, 10, 10);
   snakeboard_ctx.strokeRect(food_x, food_y, 10, 10);
+}
+
+function currentFoodColor() {
+  // color is max hexa decimal
+  if (foodColor == 100) {
+    foodColor = 0;
+  }
+  
+  var hsl = {
+    h: foodColor,
+    s: 100,
+    l: 100,
+  };
+  var color = Color( hsl );
+  foodColor++;
+  
+  return color.toString();
 }
 
 // Draw the snake on the canvas
@@ -168,7 +188,7 @@ function drawSnakePart(snake_col, snakePart) {
   // Set the color of the snake part
   snakeboard_ctx.fillStyle = snake_col;
   // Set the border colour of the snake part
-  snakeboard_ctx.strokestyle = snake_border;
+  snakeboard_ctx.strokestyle = "black";
   // Draw a "filled" rectangle to represent the snake part at the coordinates
   // the part is located
   snakeboard_ctx.fillRect(snakePart.x, snakePart.y, 10, 10);
@@ -357,9 +377,6 @@ function checkCollisionOtherSnakes() {
 }
 
 function setFireBaseListeners() {
-  // if player disconnect, remove data
-  firebase.database().ref("snake/players/" + name).onDisconnect().remove();
-  
   firebase.database().ref("snake/food").on("value", (snapshot) => {
     data = snapshot.val();
     food_x = data["x"];
