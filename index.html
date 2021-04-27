@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  	<title>Snake Game</title>
+  </head>
+
+  <body>
+
+    <div id="score">0</div>
+    <canvas id="snakeboard" width="1000" height="600"></canvas>
+
+    <style>
+      #snakeboard {
+        position: absolute;
+        top: 60%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      #score {
+        text-align: center;
+        font-size: 140px;
+      }
+    </style>
+  </body>
+  
+  <script src="https://www.gstatic.com/firebasejs/8.4.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.4.1/firebase-database.js"></script>
+
+  <script src="script.js"></script>
+</html>
