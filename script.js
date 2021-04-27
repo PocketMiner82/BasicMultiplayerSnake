@@ -285,6 +285,9 @@ function getRandomColor() {
   var i = -1;
   for (var playerName in otherSnakes) {
     otherSnake = otherSnakes[playerName];
+    
+    if (otherSnake == null || otherSnake["pos"] == null) continue;
+    
     usedColors[i++] = otherSnake["color"];
   }
   
@@ -328,7 +331,9 @@ function handleOtherSnakes() {
   for(var playerName in otherSnakes) {
     var otherSnake = otherSnakes[playerName];
     
-    // update each parts
+    if (otherSnake == null || otherSnake["pos"] == null) continue;
+    
+     // update each parts
     otherSnake["pos"].forEach(part => drawSnakePart(otherSnake["color"] == null ? "red" : otherSnake["color"], part));
   }
 }
@@ -337,6 +342,9 @@ function handleOtherSnakes() {
 function checkCollisionOtherSnakes() {
   for(var playerName in otherSnakes) {
     var otherSnake = otherSnakes[playerName]["pos"];
+    
+    // update each parts
+    if (otherSnake == null || otherSnake["pos"] == null) continue;
     
     // player collided?
     for (var i = 0; i < otherSnake.length; i++) {
