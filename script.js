@@ -161,17 +161,17 @@ function drawFood() {
 
 function currentFoodColor() {
   // color is max hexa decimal
-  if (foodColor == 100) {
+  if (foodColor == 360) {
     foodColor = 0;
   }
   
-  var hsl = {
+  var hsv = {
     h: foodColor,
     s: 100,
-    l: 100,
+    v: 100,
   };
-  var color = Color( hsl );
   foodColor++;
+  var color = Color( hsv );
   
   return color.toString();
 }
@@ -422,22 +422,21 @@ function chooseName() {
   name = "";
   
   // loop until user chose a name, that is not empty and not taken
-  while (name == "" || name == null) {
-    name = prompt("Enter your name");
+  while (name == "") {
+    var tempName = prompt("Enter your name");
+    name = tempName == null ? "" : tempName;
     
-    if (name != null) {
+    firebase.database().ref("snake/players/" + name + "/color").get().then((snapshot) => {
+      // an x value is set, so there must be a user, that has taken this name
+      if (snapshot.exists()) {
+        alert("Someone has already chosen this name.");
+        name = "";
+        chooseName();
+        return;
+      }
       
-      firebase.database().ref("snake/players/" + name + "/color").get().then((snapshot) => {
-        // an x value is set, so there must be a user, that has taken this name
-        if (snapshot.exists()) {
-          alert("Someone has already chosen this name.");
-          name = "";
-          chooseName();
-          return;
-        }
-        
-        nameQuerySuccess = true;
-      }); 
-    }
+      nameQuerySuccess = true;
+    });
   }
+  console.log(name);
 }
