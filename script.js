@@ -396,7 +396,11 @@ function setFireBaseListeners() {
     var newArray = [];
     // we ignore ourself, so we have to put it in a new array, without ourself
     for (var playerName in data) {
-      if (playerName == name) continue;
+      if (playerName == name) {
+        // update our own color
+        my_snake_col = data[playerName]["color"];
+        continue;
+      }
       newArray[playerName] = data[playerName];
     }
 
