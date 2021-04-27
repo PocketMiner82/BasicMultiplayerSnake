@@ -298,10 +298,7 @@ function getRandomColor() {
     i++;
   }
   
-  console.log(unusedColors);
-  console.log(randomInt(0, unusedColors.length - 1));
   color = unusedColors[randomInt(0, unusedColors.length - 1)];
-  console.log(color);
   return color;
 }
 
