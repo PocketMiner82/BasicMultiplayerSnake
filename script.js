@@ -314,8 +314,10 @@ function getRandomColor() {
   
   i = 0
   for (var colorName in colors) {
-    if (!Array.from(usedColors).includes(colorName)) unusedColors[i] = colors[colorName];
-    i++;
+    if (!Array.from(usedColors).includes(colors[colorName])) {
+      unusedColors[i] = colors[colorName];
+      i++;
+    }
   }
   
   color = unusedColors[randomInt(0, unusedColors.length - 1)];
