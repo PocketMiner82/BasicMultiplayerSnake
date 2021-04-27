@@ -1,9 +1,10 @@
 const board_border = 'black';
 const board_background = "white";
-const my_snake_col = 'lightblue';
 const snake_border = 'darkblue';
 
-let snake = [
+const colors = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange", "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
+
+var snake = [
   {x: 200, y: 200},
   {x: 190, y: 200},
   {x: 180, y: 200},
@@ -11,26 +12,35 @@ let snake = [
   {x: 160, y: 200}
 ]
 
+// our snake color
+var my_snake_col;
+
 // food position
-let food_x;
-let food_y;
+var food_x;
+var food_y;
 
 // current player score
-let score = 0;
+var score = 0;
 
 // True if changing direction
-let changing_direction = false;
+var changing_direction = false;
 
 // Horizontal velocity
-let dx = 10;
+var dx = 10;
 // Vertical velocity
-let dy = 0;
+var dy = 0;
 
 // the player name
-let name = "";
+var name = "";
 
 // the other players
-let otherSnakes = [];
+var otherSnakes = [];
+
+// used to count online (registered) players
+var allSnakes;
+
+// was the array above initialized from db?
+var firstInitOtherSnakes = false;
 
 // Get the canvas element
 const snakeboard = document.getElementById("snakeboard");
@@ -50,7 +60,7 @@ var firebaseConfig = {
 };
 
 // is the name already set and checked from database?
-let nameQuerySuccess = false;
+var nameQuerySuccess = false;
 
 // is the game ended
 // (used to detect, if a player leaves, then it snake will get removed so we need to cache)
@@ -63,8 +73,21 @@ firebase.initializeApp(firebaseConfig);
 
 document.addEventListener("keydown", change_direction);
 
-chooseName();
-waitForChooseName();
+setFireBaseListeners();
+
+waitForPlayerData();
+
+// wait to receive playerdata from other players
+function waitForPlayerData() {
+  if (!firstInitOtherSnakes) {
+    setTimeout(waitForPlayerData, 50);
+    return;
+  }
+  
+  checkMaxPlayerCount();
+  chooseName();
+  waitForChooseName();
+}
 
 function waitForChooseName() {
   // is the name chosen and check for duplication in db
@@ -73,20 +96,20 @@ function waitForChooseName() {
     return;
   }
   
-  // now we can run
-  // gen food, if this is the first player
-  firebase.database().ref("snake/players").limitToFirst(1).once("value", snapshot => {
-    if (!snapshot.exists()) {
-      gen_food();
-    }
-  });
+  // name set successfully, we can run the game now
   
+  
+  // generate random color for us
+  my_snake_col = "#" + Math.floor(Math.random()*16777215).toString(16);
+  
+  firebase.database().ref("snake/players/" + name + "/color").set(my_snake_col);
+  
+  // gen food, if this is the first player
+  if (getOnlinePlayers() == 0)
+    gen_food();
   // Start game
-  setFireBaseListeners();
   loop();
 }
-
-
 
 // loop function called repeatedly to keep the game running
 function loop() {
@@ -155,7 +178,7 @@ function drawSnakePart(snake_col, snakePart) {
 
 function has_game_ended() {
   // check for collsison with oneself
-  for (let i = 4; i < snake.length; i++) {
+  for (var i = 4; i < snake.length; i++) {
     if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
   }
   // check for collisions with other players
@@ -170,7 +193,7 @@ function has_game_ended() {
 }
 
 function random_food(min, max) {
-  return Math.round((Math.random() * (max-min) + min) / 10) * 10;
+  return Math.round(randomInt(min, max) / 10) * 10;
 }
 
 function gen_food() {
@@ -243,6 +266,45 @@ function move_snake() {
   setPlayerData(snake);
 }
 
+/* -------------------------
+ * -------------------------
+ * --------- Utils ---------
+ * -------------------------
+ * -------------------------
+ */
+function randomInt(min, max) {
+  return Math.random() * (max-min) + min;
+}
+
+// get random color for our snake, that isn't used
+function getRandomColor() {
+  var usedColors = [];
+  var unusedColors = [];
+  var color = "";
+  
+  var i = -1;
+  for (var playerName in otherSnakes) {
+    otherSnake = otherSnakes[playerName];
+    usedColors[i++] = otherSnake["color"];
+  }
+  
+  i = -1;
+  for (var colorName in colors) {
+    if (!Array.from(usedColors).includes(colorName)) unusedColors[i++] = colorName;
+  }
+  
+  color = unusedColors[randomInt(0, getArrayLength(unusedColors) - 1)];
+}
+
+function getArrayLength(array) {
+  // looping threw all content of the all snakes, to get length
+  var len = 0;
+  for(var ignored in array) {
+    len++;
+  }
+  return len;
+}
+
 
 /* -------------------------
  * -------------------------
@@ -250,23 +312,34 @@ function move_snake() {
  * -------------------------
  * -------------------------
  */
+ 
+function getOnlinePlayers() {
+  return getArrayLength(allSnakes);
+}
+
+function checkMaxPlayerCount() {
+  // max 15 players
+  while (getOnlinePlayers() >= 15) {
+    alert("The game is full (15/15). Click the button, to retry.");
+  }
+}
 
 function handleOtherSnakes() {
   for(var playerName in otherSnakes) {
     var otherSnake = otherSnakes[playerName];
     
     // update each parts
-    otherSnake.forEach(part => drawSnakePart("red", part));
+    otherSnake["pos"].forEach(part => drawSnakePart(otherSnake["color"] == null ? "red" : otherSnake["color"], part));
   }
 }
 
 // check if the player collides with any other player
 function checkCollisionOtherSnakes() {
   for(var playerName in otherSnakes) {
-    var otherSnake = otherSnakes[playerName];
+    var otherSnake = otherSnakes[playerName]["pos"];
     
     // player collided?
-    for (let i = 0; i < otherSnake.length; i++) {
+    for (var i = 0; i < otherSnake.length; i++) {
       if (otherSnake[i].x === snake[0].x && otherSnake[i].y === snake[0].y) return true;
     }
   }
@@ -286,22 +359,27 @@ function setFireBaseListeners() {
   // listen for other player changes
   firebase.database().ref("snake/players").on("value", (snapshot) => {
     data = snapshot.val();
-    if (data == null)
+    if (data == null) {
+      firstInitOtherSnakes = true;
       return;
+    }
     
     var newArray = [];
-    
+    // we ignore ourself, so we have to put it in a new array, without ourself
     for (var playerName in data) {
       if (playerName == name) continue;
       newArray[playerName] = data[playerName];
     }
-    
+
     otherSnakes = newArray;
+    // used to count online (registered) players
+    allSnakes = data;
+    firstInitOtherSnakes = true;
   });
 }    
 
 function setPlayerData(snakeData) {
-  firebase.database().ref("snake/players/" + name).set(snakeData);
+  firebase.database().ref("snake/players/" + name + "/pos").set(snakeData);
   return false;
 }
 
@@ -323,7 +401,7 @@ function chooseName() {
     
     if (name != null) {
       
-      firebase.database().ref("snake/players/" + name + "/0").get().then((snapshot) => {
+      firebase.database().ref("snake/players/" + name + "/color").get().then((snapshot) => {
         // an x value is set, so there must be a user, that has taken this name
         if (snapshot.exists()) {
           alert("Someone has already chosen this name.");
