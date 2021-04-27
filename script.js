@@ -100,7 +100,7 @@ function waitForChooseName() {
   
   
   // generate random color for us
-  my_snake_col = "#" + Math.floor(Math.random()*16777215).toString(16);
+  my_snake_col = getRandomColor();
   
   firebase.database().ref("snake/players/" + name + "/color").set(my_snake_col);
   
@@ -165,7 +165,7 @@ function drawSnake() {
 // Draw one snake part
 function drawSnakePart(snake_col, snakePart) {
 
-  // Set the colour of the snake part
+  // Set the color of the snake part
   snakeboard_ctx.fillStyle = snake_col;
   // Set the border colour of the snake part
   snakeboard_ctx.strokestyle = snake_border;
@@ -273,7 +273,7 @@ function move_snake() {
  * -------------------------
  */
 function randomInt(min, max) {
-  return Math.random() * (max-min) + min;
+  return Math.round(Math.random() * (max-min) + min);
 }
 
 // get random color for our snake, that isn't used
@@ -282,21 +282,27 @@ function getRandomColor() {
   var unusedColors = [];
   var color = "";
   
-  var i = -1;
+  var i = 0;
   for (var playerName in otherSnakes) {
     otherSnake = otherSnakes[playerName];
     
-    if (otherSnake == null || otherSnake["pos"] == null) continue;
+    if (otherSnake == null || otherSnake["color"] == null) continue;
     
-    usedColors[i++] = otherSnake["color"];
+    usedColors[i] = otherSnake["color"];
+    i++;
   }
   
-  i = -1;
+  i = 0
   for (var colorName in colors) {
-    if (!Array.from(usedColors).includes(colorName)) unusedColors[i++] = colorName;
+    if (!Array.from(usedColors).includes(colorName)) unusedColors[i] = colors[colorName];
+    i++;
   }
   
-  color = unusedColors[randomInt(0, getArrayLength(unusedColors) - 1)];
+  console.log(unusedColors);
+  console.log(randomInt(0, unusedColors.length - 1));
+  color = unusedColors[randomInt(0, unusedColors.length - 1)];
+  console.log(color);
+  return color;
 }
 
 function getArrayLength(array) {
@@ -343,8 +349,7 @@ function checkCollisionOtherSnakes() {
   for(var playerName in otherSnakes) {
     var otherSnake = otherSnakes[playerName]["pos"];
     
-    // update each parts
-    if (otherSnake == null || otherSnake["pos"] == null) continue;
+    if (otherSnake == null) continue;
     
     // player collided?
     for (var i = 0; i < otherSnake.length; i++) {
@@ -388,7 +393,6 @@ function setFireBaseListeners() {
 
 function setPlayerData(snakeData) {
   firebase.database().ref("snake/players/" + name + "/pos").set(snakeData);
-  return false;
 }
 
 function setFoodPos(x, y) {
