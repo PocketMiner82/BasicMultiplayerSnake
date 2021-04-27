@@ -1,7 +1,8 @@
 const board_border = 'black';
 const board_background = "white";
 
-const colors = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange", "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
+const colors = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink",
+"LawnGreen", "Orange", "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
 
 var snake = [
   {x: 200, y: 200},
@@ -21,8 +22,8 @@ var food_y;
 // color of food (it will be in rainbow mode)
 var foodColor = 0;
 
-// current player score
-var score = 0;
+// countdown before start
+var countdown = 0;
 
 // True if changing direction
 var changing_direction = false;
@@ -121,6 +122,8 @@ function loop() {
 }
 
 function tick() {
+  updateSideBar();
+  
   clear_board();
   drawFood();
   handleOtherSnakes();
@@ -272,10 +275,6 @@ function move_snake() {
   snake.unshift(head);
   const has_eaten_food = snake[0].x === food_x && snake[0].y === food_y;
   if (has_eaten_food) {
-    // Increase score
-    score += 10;
-    // Display score on screen
-    document.getElementById('score').innerHTML = score;
     // Generate new food location
     gen_food();
   } else {
@@ -333,6 +332,10 @@ function getArrayLength(array) {
   return len;
 }
 
+function htmlEntities(str) {
+    return String(str).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;');
+}
+
 
 /* -------------------------
  * -------------------------
@@ -340,7 +343,31 @@ function getArrayLength(array) {
  * -------------------------
  * -------------------------
  */
- 
+
+// update side status bar
+function updateSideBar() {
+  var scores = [];
+  var formattedScore = "";
+  
+  for(var playerName in allSnakes) {
+    var score = ((getArrayLength(allSnakes[playerName]["pos"]) - 5) * 10);
+    scores[playerName] = score;
+  }
+  
+  scores.sort((a, b) => b - a);
+  
+  for(var playerName in scores) {
+    var otherSnake = allSnakes[playerName];
+    var score = scores[playerName];
+    
+    formattedScore += "<span style=\"color:" + otherSnake["color"] + ";text-shadow: 1px 0 black, -1px 0 black, 0 1px black, 0 -1px black, 1px 1px black, -1px -1px black, -1px 1px black, 1px -1px black;\">" + htmlEntities(playerName) + "</span>: " 
+    + score + "<br>";
+  }
+  
+  document.getElementById('sidebar').innerHTML = "Online: " + getOnlinePlayers() + "/15<br><br>"
+    + formattedScore;
+}
+
 function getOnlinePlayers() {
   return getArrayLength(allSnakes);
 }
@@ -429,8 +456,10 @@ function chooseName() {
   
   // loop until user chose a name, that is not empty and not taken
   while (name == "") {
-    var tempName = prompt("Enter your name");
+    var tempName = prompt("W\u00E4hle einen Spielernamen:\n\n\".\", \"/\", \"#\", \"$\", \"[\", oder \"]\" werden durch \"_\" ersetzt.");
     name = tempName == null ? "" : tempName;
+    
+    name = name.replaceAll(".", "_").replaceAll("#", "_").replaceAll("$", "_").replaceAll("[", "_").replaceAll("]", "_").replaceAll("/", "_");
     
     firebase.database().ref("snake/players/" + name + "/color").get().then((snapshot) => {
       // an x value is set, so there must be a user, that has taken this name
@@ -444,5 +473,4 @@ function chooseName() {
       nameQuerySuccess = true;
     });
   }
-  console.log(name);
 }
