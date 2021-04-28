@@ -236,10 +236,14 @@ function gen_food() {
 }
 
 function change_direction(event) {
-  const LEFT_KEY = 37;
-  const RIGHT_KEY = 39;
   const UP_KEY = 38;
+  const W_KEY = 87;
+  const LEFT_KEY = 37;
+  const A_KEY = 65;
   const DOWN_KEY = 40;
+  const S_KEY = 83;
+  const RIGHT_KEY = 39;
+  const D_KEY = 68;
   
 // Prevent the snake from reversing
 
@@ -250,21 +254,21 @@ function change_direction(event) {
   const goingDown = dy === 10;
   const goingRight = dx === 10;
   const goingLeft = dx === -10;
-  if (keyPressed === LEFT_KEY && !goingRight) {
-    dx = -10;
-    dy = 0;
-  }
-  if (keyPressed === UP_KEY && !goingDown) {
+  if ((keyPressed === UP_KEY || keyPressed === W_KEY) && !goingDown) {
     dx = 0;
     dy = -10;
   }
-  if (keyPressed === RIGHT_KEY && !goingLeft) {
-    dx = 10;
+  if ((keyPressed === LEFT_KEY || keyPressed === A_KEY) && !goingRight) {
+    dx = -10;
     dy = 0;
   }
-  if (keyPressed === DOWN_KEY && !goingUp) {
+  if ((keyPressed === DOWN_KEY || keyPressed === S_KEY) && !goingUp) {
     dx = 0;
     dy = 10;
+  }
+  if ((keyPressed === RIGHT_KEY || keyPressed === D_KEY) && !goingLeft) {
+    dx = 10;
+    dy = 0;
   }
 }
 
@@ -363,8 +367,6 @@ function updateSideBar() {
   // sort the array descending
   scores.sort((a, b) => b.score - a.score);
   
-  console.log(scores);
-  
   // loop threw the sorted array
   for(var scoreKey in scores) {
     // getting the entry
@@ -373,8 +375,6 @@ function updateSideBar() {
     // and getting player name, score and the snake data
     var score = scoreData["score"];
     var playerName = scoreData["playerName"];
-    console.log(score);
-    console.log(playerName);
     var snakeData = allSnakes[playerName];
     
     // add the data as html to the score string
