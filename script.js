@@ -349,19 +349,37 @@ function updateSideBar() {
   var scores = [];
   var formattedScore = "";
   
+  i = 0;
+  // put all the scores and the player name in array
   for(var playerName in allSnakes) {
     var score = ((getArrayLength(allSnakes[playerName]["pos"]) - 5) * 10);
-    scores[playerName] = score;
+    scores[i] = {
+      "score": score,
+      "playerName": playerName
+    };
+    i++;
   }
   
-  scores.sort((a, b) => b - a);
+  // sort the array descending
+  scores.sort((a, b) => b.score - a.score);
   
-  for(var playerName in scores) {
-    var otherSnake = allSnakes[playerName];
-    var score = scores[playerName];
+  console.log(scores);
+  
+  // loop threw the sorted array
+  for(var scoreKey in scores) {
+    // getting the entry
+    var scoreData = scores[scoreKey];
     
-    formattedScore += "<span style=\"color:" + otherSnake["color"] + ";text-shadow: 1px 0 black, -1px 0 black, 0 1px black, 0 -1px black, 1px 1px black, -1px -1px black, -1px 1px black, 1px -1px black;\">" + htmlEntities(playerName) + "</span>: " 
-    + score + "<br>";
+    // and getting player name, score and the snake data
+    var score = scoreData["score"];
+    var playerName = scoreData["playerName"];
+    console.log(score);
+    console.log(playerName);
+    var snakeData = allSnakes[playerName];
+    
+    // add the data as html to the score string
+    formattedScore += "<span style=\"color:" + snakeData["color"] + ";text-shadow: 1px 0 black, -1px 0 black, 0 1px black, 0 -1px black, 1px 1px black, -1px -1px black, -1px 1px black, 1px -1px black;\">"
+    + htmlEntities(playerName) + "</span>: " + score + "<br>";
   }
   
   document.getElementById('sidebar').innerHTML = "Online: " + getOnlinePlayers() + "/15<br><br>"
@@ -461,10 +479,16 @@ function chooseName() {
     
     name = name.replaceAll(".", "_").replaceAll("#", "_").replaceAll("$", "_").replaceAll("[", "_").replaceAll("]", "_").replaceAll("/", "_");
     
+    if (name.length > 16) {
+      alert("Der eingegebene Name ist zu lang.");
+      name = "";
+      continue;
+    }
+    
     firebase.database().ref("snake/players/" + name + "/color").get().then((snapshot) => {
       // an x value is set, so there must be a user, that has taken this name
       if (snapshot.exists()) {
-        alert("Someone has already chosen this name.");
+        alert("Jemand hat bereits diesen Namen.");
         name = "";
         chooseName();
         return;
