@@ -82,6 +82,7 @@ firebase.initializeApp(firebaseConfig);
 // listener for key press and window resize
 document.addEventListener("keydown", onKeyPress);
 window.addEventListener("resize", onResizeWindow, false);
+snakeboard.addEventListener("click", onSnakeboardClick);
 
 // first resize manually
 onResizeWindow();
@@ -359,7 +360,6 @@ function onKeyPress(event) {
   const R_KEY = 82;
   
   // Prevent the snake from reversing
-
   if (changingDirection) return;
   changingDirection = true;
   const keyPressed = event.keyCode;
@@ -368,34 +368,42 @@ function onKeyPress(event) {
   const goingRight = dx === 10;
   const goingLeft = dx === -10;
   
-  // go up
-  if ((keyPressed === UP_KEY || keyPressed === W_KEY) && !goingDown) {
-    dx = 0;
-    dy = -10;
-  }
-  
-  // go left
-  if ((keyPressed === LEFT_KEY || keyPressed === A_KEY) && !goingRight) {
-    dx = -10;
-    dy = 0;
-  }
-  
-  // go down
-  if ((keyPressed === DOWN_KEY || keyPressed === S_KEY) && !goingUp) {
-    dx = 0;
-    dy = 10;
-  }
-  
-  // go right
-  if ((keyPressed === RIGHT_KEY || keyPressed === D_KEY) && !goingLeft) {
-    dx = 10;
-    dy = 0;
-  }
+  changeDirection(((keyPressed === UP_KEY || keyPressed === W_KEY) && !goingDown),
+    ((keyPressed === LEFT_KEY || keyPressed === A_KEY) && !goingRight),
+    ((keyPressed === DOWN_KEY || keyPressed === S_KEY) && !goingUp),
+    ((keyPressed === RIGHT_KEY || keyPressed === D_KEY) && !goingLeft));
   
   // retry
   if (keyPressed === ENTER_KEY || keyPressed === R_KEY) {
     onRetryClick();
   }
+}
+
+// if the snakeboard is clicked, get the pos of the click and send it 
+function onSnakeboardClick(e) {
+  var canvas = e.target;
+  // abs. size of element
+  var rect = canvas.getBoundingClientRect();
+  // relationship bitmap vs. element for X
+  var scaleX = snakeboardCalculatedWidth / snakeboardMaxX;
+  // relationship bitmap vs. element for Y
+  var scaleY = snakeboardCalculatedHeight / snakeboardMaxY;
+  
+  const x = (e.clientX - rect.left) / scaleX;
+  const y = (e.clientY - rect.top) / scaleY;
+  
+  // Prevent the snake from reversing
+  if (changingDirection) return;
+  changingDirection = true;
+  const goingUp = dy === -10;
+  const goingDown = dy === 10;
+  const goingRight = dx === 10;
+  const goingLeft = dx === -10;
+  
+  changeDirection(((((snakeboardMaxY / 2) > y) && !((snakeboardMaxX / 4) > x) && !((snakeboardMaxX - (snakeboardMaxX / 4)) < x)) && !goingDown),
+    (((snakeboardMaxX / 4) > x) && !goingRight),
+    ((((snakeboardMaxY / 2) < y) && !((snakeboardMaxX / 4) > x) && !((snakeboardMaxX - (snakeboardMaxX / 4)) < x)) && !goingUp),
+    (((snakeboardMaxX - (snakeboardMaxX / 4)) < x) && !goingLeft));
 }
 
 // called when the retry button is clicked
@@ -425,6 +433,26 @@ function onGameEnd() {
  * -------------------------
  * -------------------------
  */
+
+function changeDirection(up, left, down, right) {
+  // going up
+  if (up) {
+    dx = 0;
+    dy = -10;
+  // going left
+  } else if (left) {
+    dx = -10;
+    dy = 0;
+  // going down
+  } else if (down) {
+    dx = 0;
+    dy = 10;
+  // going right
+  } else if (right) {
+    dx = 10;
+    dy = 0;
+  }
+}
 
 function greatestCommonDivisor (a, b) {
   return (b == 0) ? a : greatestCommonDivisor (b, a%b);
