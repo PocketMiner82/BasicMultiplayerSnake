@@ -1,19 +1,45 @@
-const board_border = 'Black';
-const board_background = "LightGrey";
+const BOARD_BACKGROUND = "LightGrey";
 
-const colors = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink",
-"LawnGreen", "Orange", "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
+const COLORS = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange",
+"SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
 
-var snake = [
-  {x: 200, y: 200},
-  {x: 190, y: 200},
-  {x: 180, y: 200},
-  {x: 170, y: 200},
-  {x: 160, y: 200}
-]
+// max player count (currently, set to the amount of colors, available)
+const MAX_PLAYERS = COLORS.length;
+
+// is the game ended?
+var isGameEnded = false;
+
+// countdown before start
+var countdown = 6;
 
 // our snake color
 var my_snake_col;
+
+// the player name
+var name = "";
+
+// is the name already set and checked from db?
+var nameQuerySuccess = false;
+
+// our snake
+var snake = [];
+
+// are we changing direction?
+var changingDirection = false;
+
+// horizontal velocity
+var dx = 10;
+// vertical velocity
+var dy = 0;
+
+// the other players
+var otherSnakes = [];
+
+// used to count online (registered) players
+var allSnakes = [];
+
+// was the other snake data initialized from db?
+var firstInitOtherSnakes = false;
 
 // food position
 var food_x;
@@ -22,37 +48,16 @@ var food_y;
 // color of food (it will be in rainbow mode)
 var foodColor = 0;
 
-// countdown before start
-var countdown = 6;
-
-// True if changing direction
-var changingDirection = false;
-
-// Horizontal velocity
-var dx = 10;
-// Vertical velocity
-var dy = 0;
-
-// the player name
-var name = "";
-
-// the other players
-var otherSnakes = [];
-
-// used to count online (registered) players
-var allSnakes;
-
-// was the array above initialized from db?
-var firstInitOtherSnakes = false;
-
 // Get the canvas element
 const snakeboard = document.getElementById("snakeboard");
 // Return a two dimensional drawing context
 const snakeboardCtx = snakeboard.getContext("2d");
+
 // set the coordinate system dimensions (always 16:9)
 const snakeboardMaxX = 1280;
 const snakeboardMaxY = 720;
 
+// the calculated width and height of the canvas (based on screen size)
 var snakeboardCalculatedWidth;
 var snakeboardCalculatedHeight;
 
@@ -67,84 +72,45 @@ var firebaseConfig = {
   appId: "1:556381649934:web:af27169882d8297d78d05f"
 };
 
-// is the name already set and checked from database?
-var nameQuerySuccess = false;
 
-// is the game ended
-// (used to detect, if a player leaves, then it snake will get removed so we need to cache)
-var isGameEnded = false;
+
+// call main method
+main();
 
 
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+/* -------------------------
+ * -------------------------
+ * --------- Game ----------
+ * -------------------------
+ * -------------------------
+ */
 
-// listener for key press and window resize
-document.addEventListener("keydown", onKeyPress);
-window.addEventListener("resize", onResizeWindow, false);
-snakeboard.addEventListener("click", onSnakeboardClick);
 
-// first resize manually
-onResizeWindow();
 
-setFireBaseListeners();
-
-waitForPlayerData();
-
-// wait to receive playerdata from other players
-function waitForPlayerData() {
-  if (!firstInitOtherSnakes) {
-    setTimeout(waitForPlayerData, 50);
-    return;
-  }
-  
-  checkMaxPlayerCount();
-  chooseName();
-  waitForChooseName();
-}
-
-function waitForChooseName() {
-  // is the name chosen and check for duplication in db
-  if (!nameQuerySuccess) {
-    setTimeout(waitForChooseName, 50);
-    return;
-  }
-  
-  // name set successfully, we can run the game now
-  // if player disconnect, remove data
-  firebase.database().ref("snake/players/" + name).onDisconnect().remove();
-  
-  // generate random color for us
-  my_snake_col = getRandomColor();
-  
-  firebase.database().ref("snake/players/" + name + "/color").set(my_snake_col);
-  
-  // gen food, if this is the first player
-  if (getOnlinePlayers() == 0)
-    gen_food();
-  
-  // Start the main loop
-  loop();
-  
-  // starting the game
-  startGame();
-}
-
+// reset everything and start the game
 function startGame() {
+  // reset countdown
   countdown = 6;
+  // reset snake pos to random position
   snake = generateRandomSnake();
+  // reset game isn't ended
   isGameEnded = false;
   
+  // start the countdown
   startCountdown();
 }
 
+// show countdown
 function startCountdown() {
   countdown--;
   if (countdown > 0 && countdown <= 3) {
+    // countdown visible
     document.getElementById('status').innerHTML = countdown;
     setTimeout(startCountdown, 1000);
     return;
   } else if (countdown > 0) {
+    // "Get ready!" visible
     document.getElementById('status').innerHTML = "Get ready!";
     setTimeout(startCountdown, 1000);
     return;
@@ -157,10 +123,13 @@ function startCountdown() {
       return;
     }
     
+    // reset go direction
     dx = 10;
     dy = 0;
+    // countdown is no longer there
     countdown = 0;
     
+    // "Go" visible for 3 secs
     document.getElementById('status').innerHTML = "Go!";
     setTimeout(() => {
       // hide, if the innerHTML is still "Go!"
@@ -170,11 +139,14 @@ function startCountdown() {
   }
 }
 
+// the game loop
 function loop() {
   changingDirection = false;
-  setTimeout(tick, 100);
+  tick();
+  setTimeout(loop, 100);
 }
 
+// tick the game
 function tick() {
   updateSideBar();
   
@@ -183,76 +155,83 @@ function tick() {
   handleOtherSnakes();
   
   if (countdown != 0) {
-  } else if (isGameEnded || checkForCollision()) {
+    // wait for countdown finsih
+  } else if (isGameEnded || snake.length <= 0 || checkForCollision()) {
+    // game ended for us
     // first call, then call onGameEnd()
     if (!isGameEnded) onGameEnd();
   } else {
-    // first move the snake (change values in array, and handle key presses)
+    // we are still in
+    // move the snake (change values in array, and handle key presses)
     move_snake();
   }
   
   // we always need to draw the snake, so if it's there, it will be shown
   drawSnake();
+}
+
+// generate a random snake array which is 5 long (only start point is random, other 4 are relative to start point)
+function generateRandomSnake() {
+  // getting random coordinates, in x direction with a distance of min 4 gaps to the wall
+  var randomX = randomCoordinateX(4);
+  var randomY = randomCoordinateY();
+  // the coordinates for the snake, we will calculate
+  var snakeCoords = [];
   
-  // Repeat with delay
-  loop();
-}
-
-// draw a border around the canvas
-function clearBoard() {
-  //  Select the colour to fill the drawing
-  snakeboardCtx.fillStyle = board_background;
-  // Draw a "filled" rectangle to cover the entire canvas
-  snakeboardCtx.fillRect(0, 0, snakeboardMaxX, snakeboardMaxY);
-}
-
-function drawFood() {
-  snakeboardCtx.fillStyle = currentFoodColor();
-  snakeboardCtx.strokestyle = 'black';
-  snakeboardCtx.fillRect(food_x, food_y, 10, 10);
-  snakeboardCtx.strokeRect(food_x, food_y, 10, 10);
-}
-
-function currentFoodColor() {
-  // color is max hexa decimal
-  if (foodColor == 360) {
-    foodColor = 0;
+  // just fill the array with 5 coordinate pairs, the x is descending, the higher the key is
+  for (var i = 0; i<5; i++) {
+    var currentPart = i * 10;
+    snakeCoords[i] = {x: randomX - currentPart, y: randomY};
   }
   
-  var hsv = {
-    h: foodColor,
-    s: 100,
-    v: 100,
-  };
-  foodColor++;
-  var color = Color( hsv );
+  return snakeCoords;
+}
+
+// move the snake
+function move_snake() {
+  // create the new Snake's head, based on velocity
+  const head = {x: snake[0].x + dx, y: snake[0].y + dy};
   
-  return color.toString();
-}
-
-// Draw the snake on the canvas
-function drawSnake() {
-  // empty
-  if (snake.length == 0) return;
+  // add the new head to the beginning of snake body
+  snake.unshift(head);
   
-  // Draw each part
-  snake.forEach(part => drawSnakePart(my_snake_col, part))
+  // did we eat food?
+  const has_eaten_food = snake[0].x === food_x && snake[0].y === food_y;
+  
+  if (has_eaten_food) {
+    // generate new food location and don't remove last part of snake, it get's one longer
+    gen_food();
+  } else {
+    // remove the last part of snake body
+    snake.pop();
+  }
+  
+  // save to database for multiplayer
+  setPlayerData(snake);
 }
 
-// Draw one snake part
-function drawSnakePart(snake_col, snakePart) {
-
-  // Set the color of the snake part
-  snakeboardCtx.fillStyle = snake_col;
-  // Set the border colour of the snake part
-  snakeboardCtx.strokestyle = "black";
-  // Draw a "filled" rectangle to represent the snake part at the coordinates
-  // the part is located
-  snakeboardCtx.fillRect(snakePart.x, snakePart.y, 10, 10);
-  // Draw a border around the snake part
-  snakeboardCtx.strokeRect(snakePart.x, snakePart.y, 10, 10);
+// change the "walking" direction of the snake
+function changeDirection(up, left, down, right) {
+  // going up
+  if (up) {
+    dx = 0;
+    dy = -10;
+  // going left
+  } else if (left) {
+    dx = -10;
+    dy = 0;
+  // going down
+  } else if (down) {
+    dx = 0;
+    dy = 10;
+  // going right
+  } else if (right) {
+    dx = 10;
+    dy = 0;
+  }
 }
 
+// check for collission with wall, other snakes, oneself
 function checkForCollision() {
   // check for collsison with oneself
   for (var i = 4; i < snake.length; i++) {
@@ -269,6 +248,7 @@ function checkForCollision() {
   return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall;
 }
 
+// generate a new random food location
 function gen_food() {
   // Generate a random number the food x-coordinate
   food_x = randomCoordinateX();
@@ -285,22 +265,7 @@ function gen_food() {
   });
 }
 
-function move_snake() {
-  // Create the new Snake's head
-  const head = {x: snake[0].x + dx, y: snake[0].y + dy};
-  // Add the new head to the beginning of snake body
-  snake.unshift(head);
-  const has_eaten_food = snake[0].x === food_x && snake[0].y === food_y;
-  if (has_eaten_food) {
-    // Generate new food location
-    gen_food();
-  } else {
-    // Remove the last part of snake body
-    snake.pop();
-  }
-  
-  setPlayerData(snake);
-}
+
 
 /* -------------------------
  * -------------------------
@@ -309,53 +274,45 @@ function move_snake() {
  * -------------------------
  */
 
+
+
+// called when the game ends
+function onGameEnd() {
+  isGameEnded = true;
+  
+  // remove our snake from the board
+  setPlayerData([]);
+  snake = [];
+  
+  // show retry button and game over message
+  document.getElementById('status').style.visibility = 'visible';
+  document.getElementById('status').innerHTML = '<b><div style=\"color: Red; display: inline;\">Game Over!</div></b> <button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
+}
+
 // called, when the window is resized by user
 function onResizeWindow() {
-  // calculate the max width and height
-  var width50Percent = 7 * window.innerWidth / 8;
-  var height75Percent = 3 * window.innerHeight / 4;
-  
-  // calculate aspect ratio
-  var aspectRatio = snakeboardMaxX / snakeboardMaxY;
-  
-  // only allow the smallest width, to be full size
-  var widthMax = snakeboardMaxX / width50Percent;
-  var heightMax = snakeboardMaxY / height75Percent;
-  
-  // the other size (which is too big to fit on the monitor) will shrink,
-  // but it will also consider the aspect ratio
-  if (widthMax > heightMax) {
-    snakeboardCalculatedWidth = width50Percent;
-    snakeboardCalculatedHeight = width50Percent / aspectRatio;
-  } else if (heightMax > widthMax) {
-    snakeboardCalculatedWidth = height75Percent * aspectRatio;
-    snakeboardCalculatedHeight = height75Percent;
-  } else {
-    snakeboardCalculatedWidth = width50Percent;
-    snakeboardCalculatedHeight = height75Percent;
-  }
-  
-  // set the calculated width and height
-  snakeboard.width = snakeboardCalculatedWidth;
-  snakeboard.height = snakeboardCalculatedHeight;
-  // set scale multiplier for x and y
-  snakeboardCtx.scale(snakeboardCalculatedWidth/snakeboardMaxX, snakeboardCalculatedHeight/snakeboardMaxY);
+  resizeSnakeboard();
 }
 
 // called, when the player presses a key on keyboard
 function onKeyPress(event) {
+  // all keys for going up
   const UP_KEY = 38;
   const W_KEY = 87;
   
+  // all keys for going left
   const LEFT_KEY = 37;
   const A_KEY = 65;
   
+  // all keys for going down
   const DOWN_KEY = 40;
   const S_KEY = 83;
   
+  // all keys for going right
   const RIGHT_KEY = 39;
   const D_KEY = 68;
   
+  // all keys for pressing the retry button
   const ENTER_KEY = 13;
   const R_KEY = 82;
   
@@ -368,6 +325,7 @@ function onKeyPress(event) {
   const goingRight = dx === 10;
   const goingLeft = dx === -10;
   
+  // change direction based on pressed key
   changeDirection(((keyPressed === UP_KEY || keyPressed === W_KEY) && !goingDown),
     ((keyPressed === LEFT_KEY || keyPressed === A_KEY) && !goingRight),
     ((keyPressed === DOWN_KEY || keyPressed === S_KEY) && !goingUp),
@@ -400,10 +358,17 @@ function onSnakeboardClick(e) {
   const goingRight = dx === 10;
   const goingLeft = dx === -10;
   
-  changeDirection(((((snakeboardMaxY / 2) > y) && !((snakeboardMaxX / 4) > x) && !((snakeboardMaxX - (snakeboardMaxX / 4)) < x)) && !goingDown),
-    (((snakeboardMaxX / 4) > x) && !goingRight),
-    ((((snakeboardMaxY / 2) < y) && !((snakeboardMaxX / 4) > x) && !((snakeboardMaxX - (snakeboardMaxX / 4)) < x)) && !goingUp),
-    (((snakeboardMaxX - (snakeboardMaxX / 4)) < x) && !goingLeft));
+  // is the upper part of the canvas pressed and aren't we going down?
+  const upPressed = (((snakeboardMaxY / 2) > y) && !((snakeboardMaxX / 4) > x) && !((snakeboardMaxX - (snakeboardMaxX / 4)) < x)) && !goingDown;
+  // is the left part of the canvas pressed and aren't we going right?
+  const leftPressed = ((snakeboardMaxX / 4) > x) && !goingRight;
+  // is the down part of the canvas pressed and aren't we going up?
+  const downPressed = (((snakeboardMaxY / 2) < y) && !((snakeboardMaxX / 4) > x) && !((snakeboardMaxX - (snakeboardMaxX / 4)) < x)) && !goingUp;
+  // is the right part of the canvas pressed and aren't we going left?
+  const rightPressed = ((snakeboardMaxX - (snakeboardMaxX / 4)) < x) && !goingLeft;
+  
+  // change direction based on the values
+  changeDirection(upPressed, leftPressed, downPressed, rightPressed);
 }
 
 // called when the retry button is clicked
@@ -414,137 +379,88 @@ function onRetryClick() {
   }
 }
 
-// called when the game ends
-function onGameEnd() {
-  isGameEnded = true;
-  
-  // remove our snake from the board
-  setPlayerData([]);
-  snake = [];
-  
-  // show retry button and game over message
-  document.getElementById('status').style.visibility = 'visible';
-  document.getElementById('status').innerHTML = '<b><div style=\"color: Red; display: inline;\">Game Over!</div></b> <button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
-}
+
 
 /* -------------------------
  * -------------------------
- * --------- Utils ---------
+ * ------- Graphics --------
  * -------------------------
  * -------------------------
  */
 
-function changeDirection(up, left, down, right) {
-  // going up
-  if (up) {
-    dx = 0;
-    dy = -10;
-  // going left
-  } else if (left) {
-    dx = -10;
-    dy = 0;
-  // going down
-  } else if (down) {
-    dx = 0;
-    dy = 10;
-  // going right
-  } else if (right) {
-    dx = 10;
-    dy = 0;
-  }
-}
 
-function greatestCommonDivisor (a, b) {
-  return (b == 0) ? a : greatestCommonDivisor (b, a%b);
-}
 
-function randomInt(min, max) {
-  return Math.round(Math.random() * (max-min) + min);
-}
-
-// get random coordinate for x on the board, min is the minimum distance to the wall from left
-function randomCoordinateX(min) {
-  min = min || 0;
-  return Math.round(randomInt(min * 10, snakeboardMaxX - 10) / 10) * 10;
-}
-
-// get random coordinate for y on the board
-function randomCoordinateY() {
-  return Math.round(randomInt(0, snakeboardMaxY - 10) / 10) * 10;
-}
-
-function generateRandomSnake() {
-  // getting random coordinates, in x direction with a distance of min 4 gaps to the wall
-  var randomX = randomCoordinateX(4);
-  var randomY = randomCoordinateY();
-  // the coordinates for the snake, we will calculate
-  var snakeCoords = [];
+// resize the snakeboard, based on the size of the window
+function resizeSnakeboard() {
+  // calculate the max width and height
+  var width50Percent = 7 * window.innerWidth / 8;
+  var height75Percent = 3 * window.innerHeight / 4;
   
-  // just fill the array with 5 coordinate pairs, the x is descending, the higher the key is
-  for (var i = 0; i<5; i++) {
-    var currentPart = i * 10;
-    snakeCoords[i] = {x: randomX - currentPart, y: randomY};
+  // calculate aspect ratio
+  var aspectRatio = snakeboardMaxX / snakeboardMaxY;
+  
+  // only allow the smallest width, to be full size
+  var widthMax = snakeboardMaxX / width50Percent;
+  var heightMax = snakeboardMaxY / height75Percent;
+  
+  // the other size (which is too big to fit on the monitor) will shrink,
+  // but it will also consider the aspect ratio
+  if (widthMax > heightMax) {
+    snakeboardCalculatedWidth = width50Percent;
+    snakeboardCalculatedHeight = width50Percent / aspectRatio;
+  } else if (heightMax > widthMax) {
+    snakeboardCalculatedWidth = height75Percent * aspectRatio;
+    snakeboardCalculatedHeight = height75Percent;
+  } else {
+    snakeboardCalculatedWidth = width50Percent;
+    snakeboardCalculatedHeight = height75Percent;
   }
   
-  return snakeCoords;
+  // set the calculated width and height
+  snakeboard.width = snakeboardCalculatedWidth;
+  snakeboard.height = snakeboardCalculatedHeight;
+  // set scale multiplier for x and y
+  snakeboardCtx.scale(snakeboardCalculatedWidth/snakeboardMaxX, snakeboardCalculatedHeight/snakeboardMaxY);
 }
 
-// get random color for our snake, that isn't used
-function getRandomColor() {
-  var unusedColors = getUnusedColors();
+// draw the canvas background
+function clearBoard() {
+  //  select the color to fill the drawing
+  snakeboardCtx.fillStyle = BOARD_BACKGROUND;
+  // Draw a "filled" rectangle to cover the entire canvas
+  snakeboardCtx.fillRect(0, 0, snakeboardMaxX, snakeboardMaxY);
+}
+
+// Draw the snake on the canvas
+function drawSnake() {
+  // empty
+  if (snake.length == 0) return;
   
-  var color = unusedColors[randomInt(0, unusedColors.length - 1)];
-  return color;
+  // Draw each part
+  snake.forEach(part => drawSnakePart(my_snake_col, part))
 }
 
-function getUnusedColors() {
-  var usedColors = [];
-  var unusedColors = [];
-  
-  // getting all used colors
-  var i = 0;
-  for (var playerName in otherSnakes) {
-    otherSnake = otherSnakes[playerName];
-    
-    if (otherSnake == null || otherSnake["color"] == null) continue;
-    
-    usedColors[i] = otherSnake["color"];
-    i++;
-  }
-  
-  // looping threw all available colors, then checking if the color
-  // is in the list of used colors, if it isn't, the color is unused
-  i = 0
-  for (var colorName in colors) {
-    if (!Array.from(usedColors).includes(colors[colorName])) {
-      unusedColors[i] = colors[colorName];
-      i++;
-    }
-  }
-  
-  // now we have a list of unused colors, which we can return
-  return unusedColors;
+// Draw one snake part
+function drawSnakePart(snake_col, snakePart) {
+
+  // Set the color of the snake part
+  snakeboardCtx.fillStyle = snake_col;
+  // Set the border colour of the snake part
+  snakeboardCtx.strokestyle = "black";
+  // Draw a "filled" rectangle to represent the snake part at the coordinates
+  // the part is located
+  snakeboardCtx.fillRect(snakePart.x, snakePart.y, 10, 10);
+  // Draw a border around the snake part
+  snakeboardCtx.strokeRect(snakePart.x, snakePart.y, 10, 10);
 }
 
-function getArrayLength(array) {
-  // looping threw all content of the all snakes, to get length
-  var len = 0;
-  for(var ignored in array) {
-    len++;
-  }
-  return len;
+// draw the food
+function drawFood() {
+  snakeboardCtx.fillStyle = currentFoodColor();
+  snakeboardCtx.strokestyle = 'black';
+  snakeboardCtx.fillRect(food_x, food_y, 10, 10);
+  snakeboardCtx.strokeRect(food_x, food_y, 10, 10);
 }
-
-function htmlEntities(str) {
-    return String(str).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;');
-}
-
-/* -------------------------
- * -------------------------
- * ------ Multiplayer ------
- * -------------------------
- * -------------------------
- */
 
 // update side status bar
 function updateSideBar() {
@@ -584,17 +500,129 @@ function updateSideBar() {
     + formattedScore;
 }
 
+
+
+/* -------------------------
+ * -------------------------
+ * --------- Utils ---------
+ * -------------------------
+ * -------------------------
+ */
+
+
+
+// get random color for our snake, that isn't used
+function getRandomColor() {
+  var unusedColors = getUnusedColors();
+  
+  var color = unusedColors[randomInt(0, unusedColors.length - 1)];
+  return color;
+}
+
+// get all colors, which aren't used by any player
+function getUnusedColors() {
+  var usedColors = [];
+  var unusedColors = [];
+  
+  // getting all used colors
+  var i = 0;
+  for (var playerName in otherSnakes) {
+    otherSnake = otherSnakes[playerName];
+    
+    if (otherSnake == null || otherSnake["color"] == null) continue;
+    
+    usedColors[i] = otherSnake["color"];
+    i++;
+  }
+  
+  // looping threw all available colors, then checking if the color
+  // is in the list of used colors, if it isn't, the color is unused
+  i = 0
+  for (var colorName in COLORS) {
+    if (!Array.from(usedColors).includes(COLORS[colorName])) {
+      unusedColors[i] = COLORS[colorName];
+      i++;
+    }
+  }
+  
+  // now we have a list of unused colors, which we can return
+  return unusedColors;
+}
+
+// get the current "rainbow" food color
+function currentFoodColor() {
+  // color is max hexa decimal
+  if (foodColor == 360) {
+    foodColor = 0;
+  }
+  
+  var hsv = {
+    h: foodColor,
+    s: 100,
+    v: 100,
+  };
+  foodColor++;
+  var color = Color( hsv );
+  
+  return color.toString();
+}
+
+// escape html specific characters (like < or >)
+function htmlEntities(str) {
+    return String(str).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;');
+}
+
+// get the length of an iterable object
+function getArrayLength(array) {
+  // looping threw all content of the all snakes, to get length
+  var len = 0;
+  for(var ignored in array) {
+    len++;
+  }
+  return len;
+}
+
+// generate random integer
+function randomInt(min, max) {
+  return Math.round(Math.random() * (max-min) + min);
+}
+
+// get random coordinate for x on the board, min is the minimum distance to the wall from left
+function randomCoordinateX(min) {
+  min = min || 0;
+  return Math.round(randomInt(min * 10, snakeboardMaxX - 10) / 10) * 10;
+}
+
+// get random coordinate for y on the board
+function randomCoordinateY() {
+  return Math.round(randomInt(0, snakeboardMaxY - 10) / 10) * 10;
+}
+
+
+
+/* -------------------------
+ * -------------------------
+ * ------ Multiplayer ------
+ * -------------------------
+ * -------------------------
+ */
+
+
+
+// get the current online players
 function getOnlinePlayers() {
   return getArrayLength(allSnakes);
 }
 
+// check if there are more players online, then max player count
 function checkMaxPlayerCount() {
   // max 15 players
-  while (getOnlinePlayers() >= 15) {
+  while (getOnlinePlayers() >= MAX_PLAYERS) {
     alert("The game is full (15/15). Click the button, to retry.");
   }
 }
 
+// save the movement of other snakes to array
 function handleOtherSnakes() {
   for(var playerName in otherSnakes) {
     var otherSnake = otherSnakes[playerName];
@@ -621,14 +649,30 @@ function checkForCollisionWithOtherSnakes() {
   return false;
 }
 
+// save our playerdata to database
+function setPlayerData(snakeData) {
+  firebase.database().ref("snake/players/" + name + "/pos").set(snakeData);
+}
+
+// save a new food position
+function setFoodPos(x, y) {
+  firebase.database().ref("snake/food").set({
+    "x": x,
+    "y": y
+  });
+  return false;
+}
+
+// set the listeners for firebase
 function setFireBaseListeners() {
+  // value of food changed, update it
   firebase.database().ref("snake/food").on("value", (snapshot) => {
     data = snapshot.val();
     food_x = data["x"];
     food_y = data["y"];
   });
   
-  // listen for other player changes
+  // listen for other snake(s) changes
   firebase.database().ref("snake/players").on("value", (snapshot) => {
     data = snapshot.val();
     if (data == null) {
@@ -652,18 +696,73 @@ function setFireBaseListeners() {
     allSnakes = data;
     firstInitOtherSnakes = true;
   });
-}    
-
-function setPlayerData(snakeData) {
-  firebase.database().ref("snake/players/" + name + "/pos").set(snakeData);
 }
 
-function setFoodPos(x, y) {
-  firebase.database().ref("snake/food").set({
-    "x": x,
-    "y": y
-  });
-  return false;
+
+
+/* -------------------------
+ * -------------------------
+ * --------- Main ----------
+ * -------------------------
+ * -------------------------
+ */
+
+
+
+function main() {
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+
+  // listener for key press and window resize
+  document.addEventListener("keydown", onKeyPress);
+  window.addEventListener("resize", onResizeWindow, false);
+  snakeboard.addEventListener("click", onSnakeboardClick);
+
+  // first resize manually
+  onResizeWindow();
+
+  setFireBaseListeners();
+
+  waitForPlayerData();
+}
+
+// wait to receive playerdata from other players
+function waitForPlayerData() {
+  if (!firstInitOtherSnakes) {
+    setTimeout(waitForPlayerData, 50);
+    return;
+  }
+  
+  checkMaxPlayerCount();
+  chooseName();
+  waitForChooseName();
+}
+
+function waitForChooseName() {
+  // is the name chosen and check for duplication in db
+  if (!nameQuerySuccess) {
+    setTimeout(waitForChooseName, 50);
+    return;
+  }
+  
+  // name set successfully, we can run the game now
+  // if player disconnect, remove data
+  firebase.database().ref("snake/players/" + name).onDisconnect().remove();
+  
+  // generate random color for us
+  my_snake_col = getRandomColor();
+  
+  firebase.database().ref("snake/players/" + name + "/color").set(my_snake_col);
+  
+  // gen food, if this is the first player
+  if (getOnlinePlayers() == 0)
+    gen_food();
+  
+  // Start the main loop
+  loop();
+  
+  // starting the game
+  startGame();
 }
 
 function chooseName() {
