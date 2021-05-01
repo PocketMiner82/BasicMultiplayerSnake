@@ -1,5 +1,5 @@
-const board_border = 'black';
-const board_background = "white";
+const board_border = 'Black';
+const board_background = "LightGrey";
 
 const colors = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink",
 "LawnGreen", "Orange", "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
@@ -26,7 +26,7 @@ var foodColor = 0;
 var countdown = 6;
 
 // True if changing direction
-var changing_direction = false;
+var changingDirection = false;
 
 // Horizontal velocity
 var dx = 10;
@@ -48,8 +48,13 @@ var firstInitOtherSnakes = false;
 // Get the canvas element
 const snakeboard = document.getElementById("snakeboard");
 // Return a two dimensional drawing context
-const snakeboard_ctx = snakeboard.getContext("2d");
+const snakeboardCtx = snakeboard.getContext("2d");
+// set the coordinate system dimensions (always 16:9)
+const snakeboardMaxX = 1280;
+const snakeboardMaxY = 720;
 
+var snakeboardCalculatedWidth;
+var snakeboardCalculatedHeight;
 
 // the web app's Firebase configuration
 var firebaseConfig = {
@@ -74,7 +79,12 @@ var isGameEnded = false;
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-document.addEventListener("keydown", change_direction);
+// listener for key press and window resize
+document.addEventListener("keydown", onKeyPress);
+window.addEventListener("resize", onResizeWindow, false);
+
+// first resize manually
+onResizeWindow();
 
 setFireBaseListeners();
 
@@ -160,7 +170,7 @@ function startCountdown() {
 }
 
 function loop() {
-  changing_direction = false;
+  changingDirection = false;
   setTimeout(tick, 100);
 }
 
@@ -190,20 +200,16 @@ function tick() {
 // draw a border around the canvas
 function clearBoard() {
   //  Select the colour to fill the drawing
-  snakeboard_ctx.fillStyle = board_background;
-  //  Select the colour for the border of the canvas
-  snakeboard_ctx.strokestyle = board_border;
+  snakeboardCtx.fillStyle = board_background;
   // Draw a "filled" rectangle to cover the entire canvas
-  snakeboard_ctx.fillRect(0, 0, snakeboard.width, snakeboard.height);
-  // Draw a "border" around the entire canvas
-  snakeboard_ctx.strokeRect(0, 0, snakeboard.width, snakeboard.height);
+  snakeboardCtx.fillRect(0, 0, snakeboardMaxX, snakeboardMaxY);
 }
 
 function drawFood() {
-  snakeboard_ctx.fillStyle = currentFoodColor();
-  snakeboard_ctx.strokestyle = 'black';
-  snakeboard_ctx.fillRect(food_x, food_y, 10, 10);
-  snakeboard_ctx.strokeRect(food_x, food_y, 10, 10);
+  snakeboardCtx.fillStyle = currentFoodColor();
+  snakeboardCtx.strokestyle = 'black';
+  snakeboardCtx.fillRect(food_x, food_y, 10, 10);
+  snakeboardCtx.strokeRect(food_x, food_y, 10, 10);
 }
 
 function currentFoodColor() {
@@ -236,14 +242,14 @@ function drawSnake() {
 function drawSnakePart(snake_col, snakePart) {
 
   // Set the color of the snake part
-  snakeboard_ctx.fillStyle = snake_col;
+  snakeboardCtx.fillStyle = snake_col;
   // Set the border colour of the snake part
-  snakeboard_ctx.strokestyle = "black";
+  snakeboardCtx.strokestyle = "black";
   // Draw a "filled" rectangle to represent the snake part at the coordinates
   // the part is located
-  snakeboard_ctx.fillRect(snakePart.x, snakePart.y, 10, 10);
+  snakeboardCtx.fillRect(snakePart.x, snakePart.y, 10, 10);
   // Draw a border around the snake part
-  snakeboard_ctx.strokeRect(snakePart.x, snakePart.y, 10, 10);
+  snakeboardCtx.strokeRect(snakePart.x, snakePart.y, 10, 10);
 }
 
 function checkForCollision() {
@@ -256,9 +262,9 @@ function checkForCollision() {
   
   // check for collission with wall
   const hitLeftWall = snake[0].x < 0;
-  const hitRightWall = snake[0].x > snakeboard.width - 10;
+  const hitRightWall = snake[0].x > snakeboardMaxX - 10;
   const hitToptWall = snake[0].y < 0;
-  const hitBottomWall = snake[0].y > snakeboard.height - 10;
+  const hitBottomWall = snake[0].y > snakeboardMaxY - 10;
   if (hitLeftWall || hitRightWall || hitToptWall || hitBottomWall) console.log("3");
   return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall
 }
@@ -303,21 +309,42 @@ function move_snake() {
  * -------------------------
  */
 
-// called when the game ends
-function onGameEnd() {
-  isGameEnded = true;
+// called, when the window is resized by user
+function onResizeWindow() {
+  var width50Percent = 7 * window.innerWidth / 8;
+  var height75Percent = 3 * window.innerHeight / 4;
   
-  // remove our snake from the board
-  setPlayerData([]);
-  snake = [];
+  var aspectRatio = snakeboardMaxX / snakeboardMaxY;
   
-  // show retry button and game over message
-  document.getElementById('buttonRetry').style.visibility = 'visible';
-  document.getElementById('status').style.visibility = 'visible';
-  document.getElementById('status').innerHTML = '<b><div style=\"color:Red\">Game Over!</div></b>';
+  var widthMax = snakeboardMaxX / width50Percent;
+  var heightMax = snakeboardMaxY / height75Percent;
+  
+  if (widthMax > heightMax) {
+    snakeboardCalculatedWidth = width50Percent;
+    snakeboardCalculatedHeight = width50Percent / aspectRatio;
+  } else if (heightMax > widthMax) {
+    snakeboardCalculatedWidth = height75Percent * aspectRatio;
+    snakeboardCalculatedHeight = height75Percent;
+  } else {
+    snakeboardCalculatedWidth = width50Percent;
+    snakeboardCalculatedHeight = height75Percent;
+  }
+  
+  console.log(width50Percent);
+  console.log(widthMax);
+  console.log(height75Percent);
+  console.log(heightMax);
+
+  
+  
+  snakeboard.width = snakeboardCalculatedWidth;
+  snakeboard.height = snakeboardCalculatedHeight;
+  // set scale multiplier for x and y
+  snakeboardCtx.scale(snakeboardCalculatedWidth/snakeboardMaxX, snakeboardCalculatedHeight/snakeboardMaxY);
 }
 
-function change_direction(event) {
+// called, when the player presses a key on keyboard
+function onKeyPress(event) {
   const UP_KEY = 38;
   const W_KEY = 87;
   const LEFT_KEY = 37;
@@ -329,8 +356,8 @@ function change_direction(event) {
   
   // Prevent the snake from reversing
 
-  if (changing_direction) return;
-  changing_direction = true;
+  if (changingDirection) return;
+  changingDirection = true;
   const keyPressed = event.keyCode;
   const goingUp = dy === -10;
   const goingDown = dy === 10;
@@ -354,11 +381,25 @@ function change_direction(event) {
   }
 }
 
+// called when the retry button is clicked
 function onRetryClick() {
+  // if the player isn't alive, restart
   if (isGameEnded) {
-    document.getElementById('buttonRetry').style.visibility = "hidden";
     startGame();
   }
+}
+
+// called when the game ends
+function onGameEnd() {
+  isGameEnded = true;
+  
+  // remove our snake from the board
+  setPlayerData([]);
+  snake = [];
+  
+  // show retry button and game over message
+  document.getElementById('status').style.visibility = 'visible';
+  document.getElementById('status').innerHTML = '<b><div style=\"color: Red; display: inline;\">Game Over!</div></b> <button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry</button>';
 }
 
 /* -------------------------
@@ -367,6 +408,11 @@ function onRetryClick() {
  * -------------------------
  * -------------------------
  */
+
+function greatestCommonDivisor (a, b) {
+  return (b == 0) ? a : greatestCommonDivisor (b, a%b);
+}
+
 function randomInt(min, max) {
   return Math.round(Math.random() * (max-min) + min);
 }
@@ -374,12 +420,12 @@ function randomInt(min, max) {
 // get random coordinate for x on the board, min is the minimum distance to the wall from left
 function randomCoordinateX(min) {
   min = min || 0;
-  return Math.round(randomInt(min * 10, snakeboard.width - 10) / 10) * 10;
+  return Math.round(randomInt(min * 10, snakeboardMaxX - 10) / 10) * 10;
 }
 
 // get random coordinate for y on the board
 function randomCoordinateY() {
-  return Math.round(randomInt(0, snakeboard.height - 10) / 10) * 10;
+  return Math.round(randomInt(0, snakeboardMaxY - 10) / 10) * 10;
 }
 
 function generateRandomSnake() {
