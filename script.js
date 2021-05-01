@@ -255,18 +255,17 @@ function drawSnakePart(snake_col, snakePart) {
 function checkForCollision() {
   // check for collsison with oneself
   for (var i = 4; i < snake.length; i++) {
-    if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) { return true; console.log("1");}
+    if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
   }
   // check for collisions with other players
-  if (checkForCollisionWithOtherSnakes()) { return true; console.log("2");}
+  if (checkForCollisionWithOtherSnakes()) return true;
   
   // check for collission with wall
   const hitLeftWall = snake[0].x < 0;
   const hitRightWall = snake[0].x > snakeboardMaxX - 10;
   const hitToptWall = snake[0].y < 0;
   const hitBottomWall = snake[0].y > snakeboardMaxY - 10;
-  if (hitLeftWall || hitRightWall || hitToptWall || hitBottomWall) console.log("3");
-  return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall
+  return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall;
 }
 
 function gen_food() {
@@ -311,14 +310,19 @@ function move_snake() {
 
 // called, when the window is resized by user
 function onResizeWindow() {
+  // calculate the max width and height
   var width50Percent = 7 * window.innerWidth / 8;
   var height75Percent = 3 * window.innerHeight / 4;
   
+  // calculate aspect ratio
   var aspectRatio = snakeboardMaxX / snakeboardMaxY;
   
+  // only allow the smallest width, to be full size
   var widthMax = snakeboardMaxX / width50Percent;
   var heightMax = snakeboardMaxY / height75Percent;
   
+  // the other size (which is too big to fit on the monitor) will shrink,
+  // but it will also consider the aspect ratio
   if (widthMax > heightMax) {
     snakeboardCalculatedWidth = width50Percent;
     snakeboardCalculatedHeight = width50Percent / aspectRatio;
@@ -330,13 +334,7 @@ function onResizeWindow() {
     snakeboardCalculatedHeight = height75Percent;
   }
   
-  console.log(width50Percent);
-  console.log(widthMax);
-  console.log(height75Percent);
-  console.log(heightMax);
-
-  
-  
+  // set the calculated width and height
   snakeboard.width = snakeboardCalculatedWidth;
   snakeboard.height = snakeboardCalculatedHeight;
   // set scale multiplier for x and y
