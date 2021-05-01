@@ -345,12 +345,18 @@ function onResizeWindow() {
 function onKeyPress(event) {
   const UP_KEY = 38;
   const W_KEY = 87;
+  
   const LEFT_KEY = 37;
   const A_KEY = 65;
+  
   const DOWN_KEY = 40;
   const S_KEY = 83;
+  
   const RIGHT_KEY = 39;
   const D_KEY = 68;
+  
+  const ENTER_KEY = 13;
+  const R_KEY = 82;
   
   // Prevent the snake from reversing
 
@@ -361,21 +367,34 @@ function onKeyPress(event) {
   const goingDown = dy === 10;
   const goingRight = dx === 10;
   const goingLeft = dx === -10;
+  
+  // go up
   if ((keyPressed === UP_KEY || keyPressed === W_KEY) && !goingDown) {
     dx = 0;
     dy = -10;
   }
+  
+  // go left
   if ((keyPressed === LEFT_KEY || keyPressed === A_KEY) && !goingRight) {
     dx = -10;
     dy = 0;
   }
+  
+  // go down
   if ((keyPressed === DOWN_KEY || keyPressed === S_KEY) && !goingUp) {
     dx = 0;
     dy = 10;
   }
+  
+  // go right
   if ((keyPressed === RIGHT_KEY || keyPressed === D_KEY) && !goingLeft) {
     dx = 10;
     dy = 0;
+  }
+  
+  // retry
+  if (keyPressed === ENTER_KEY || keyPressed === R_KEY) {
+    onRetryClick();
   }
 }
 
@@ -397,7 +416,7 @@ function onGameEnd() {
   
   // show retry button and game over message
   document.getElementById('status').style.visibility = 'visible';
-  document.getElementById('status').innerHTML = '<b><div style=\"color: Red; display: inline;\">Game Over!</div></b> <button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry</button>';
+  document.getElementById('status').innerHTML = '<b><div style=\"color: Red; display: inline;\">Game Over!</div></b> <button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
 }
 
 /* -------------------------
