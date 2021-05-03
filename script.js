@@ -3,8 +3,14 @@ const BOARD_BACKGROUND = "LightGrey";
 const COLORS = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange",
 "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
 
+// the delay between snake updates in ms
+const SNAKE_UPDATE_DELAY = 100;
+
 // max player count (currently, set to the amount of colors, available)
 const MAX_PLAYERS = COLORS.length;
+
+// the time of the last graphics update
+var timeLastGraphicsUpdate = 0;
 
 // is the game ended?
 var isGameEnded = false;
@@ -27,10 +33,11 @@ var snake = [];
 // are we changing direction?
 var changingDirection = false;
 
-// horizontal velocity
-var dx = 10;
-// vertical velocity
-var dy = 0;
+// horizontal snake move delta
+var deltaX = 10;
+
+// vertical snake move delta
+var deltaY = 0;
 
 // the other players
 var otherSnakes = [];
@@ -90,6 +97,8 @@ main();
 
 // reset everything and start the game
 function startGame() {
+  // reset the last graphics update time to now
+  timeLastGraphicsUpdate = Date.now();
   // reset countdown
   countdown = 6;
   // reset snake pos to random position
@@ -124,9 +133,10 @@ function startCountdown() {
     }
     
     // reset go direction
-    dx = 10;
-    dy = 0;
-    // countdown is no longer there
+    deltaX = 10;
+    deltaY = 0;
+    
+    // countdown is finished, we don't need to wait
     countdown = 0;
     
     // "Go" visible for 3 secs
@@ -141,9 +151,31 @@ function startCountdown() {
 
 // the game loop
 function loop() {
-  changingDirection = false;
-  tick();
-  setTimeout(loop, 100);
+  // the current time
+  var timeNow = Date.now();
+  // the time estimated since last update
+  var timeEstimated = timeNow - timeLastGraphicsUpdate;
+  
+  if (timeEstimated >= SNAKE_UPDATE_DELAY) {
+    // the time, we were waiting too long
+    var timeTooLong = timeEstimated - SNAKE_UPDATE_DELAY;
+    
+    // the count, how often we have to call the tick method, based on the time, we were waiting too long, at least one time
+    var loopCount = Math.max(1, Math.round(timeTooLong / SNAKE_UPDATE_DELAY));
+    
+    for (var i = 0; i < loopCount; i++) {
+      // tick the game
+      changingDirection = false;
+      tick();
+    }
+    
+    // send playerdata just once after the for loop, if snake is set
+    if (snake.length != 0) setPlayerData(snake);
+    
+    // set the last update time to now
+    timeLastGraphicsUpdate = Date.now();
+  }
+  setTimeout(loop, 1);
 }
 
 // tick the game
@@ -189,8 +221,8 @@ function generateRandomSnake() {
 
 // move the snake
 function move_snake() {
-  // create the new Snake's head, based on velocity
-  const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+  // create the new Snake's head, based on snake move delta
+  const head = {x: snake[0].x + deltaX, y: snake[0].y + deltaY};
   
   // add the new head to the beginning of snake body
   snake.unshift(head);
@@ -205,29 +237,26 @@ function move_snake() {
     // remove the last part of snake body
     snake.pop();
   }
-  
-  // save to database for multiplayer
-  setPlayerData(snake);
 }
 
 // change the "walking" direction of the snake
 function changeDirection(up, left, down, right) {
   // going up
   if (up) {
-    dx = 0;
-    dy = -10;
+    deltaX = 0;
+    deltaY = -10;
   // going left
   } else if (left) {
-    dx = -10;
-    dy = 0;
+    deltaX = -10;
+    deltaY = 0;
   // going down
   } else if (down) {
-    dx = 0;
-    dy = 10;
+    deltaX = 0;
+    deltaY = 10;
   // going right
   } else if (right) {
-    dx = 10;
-    dy = 0;
+    deltaX = 10;
+    deltaY = 0;
   }
 }
 
@@ -320,10 +349,10 @@ function onKeyPress(event) {
   if (changingDirection) return;
   changingDirection = true;
   const keyPressed = event.keyCode;
-  const goingUp = dy === -10;
-  const goingDown = dy === 10;
-  const goingRight = dx === 10;
-  const goingLeft = dx === -10;
+  const goingUp = deltaY === -10;
+  const goingDown = deltaY === 10;
+  const goingRight = deltaX === 10;
+  const goingLeft = deltaX === -10;
   
   // change direction based on pressed key
   changeDirection(((keyPressed === UP_KEY || keyPressed === W_KEY) && !goingDown),
@@ -353,10 +382,10 @@ function onSnakeboardClick(e) {
   // Prevent the snake from reversing
   if (changingDirection) return;
   changingDirection = true;
-  const goingUp = dy === -10;
-  const goingDown = dy === 10;
-  const goingRight = dx === 10;
-  const goingLeft = dx === -10;
+  const goingUp = deltaY === -10;
+  const goingDown = deltaY === 10;
+  const goingRight = deltaX === 10;
+  const goingLeft = deltaX === -10;
   
   // is the upper part of the canvas pressed and aren't we going down?
   const upPressed = (((snakeboardMaxY / 2) > y) && !((snakeboardMaxX / 4) > x) && !((snakeboardMaxX - (snakeboardMaxX / 4)) < x)) && !goingDown;
@@ -469,7 +498,7 @@ function updateSideBar() {
   
   i = 0;
   // put all the scores and the player name in array
-  for(var playerName in allSnakes) {
+  for (var playerName in allSnakes) {
     var score = ((getArrayLength(allSnakes[playerName]["pos"]) - 5) * 10);
     scores[i] = {
       "score": score,
@@ -482,7 +511,7 @@ function updateSideBar() {
   scores.sort((a, b) => b.score - a.score);
   
   // loop threw the sorted array
-  for(var scoreKey in scores) {
+  for (var scoreKey in scores) {
     // getting the entry
     var scoreData = scores[scoreKey];
     
@@ -572,16 +601,6 @@ function htmlEntities(str) {
     return String(str).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;');
 }
 
-// get the length of an iterable object
-function getArrayLength(array) {
-  // looping threw all content of the all snakes, to get length
-  var len = 0;
-  for(var ignored in array) {
-    len++;
-  }
-  return len;
-}
-
 // generate random integer
 function randomInt(min, max) {
   return Math.round(Math.random() * (max-min) + min);
@@ -596,6 +615,14 @@ function randomCoordinateX(min) {
 // get random coordinate for y on the board
 function randomCoordinateY() {
   return Math.round(randomInt(0, snakeboardMaxY - 10) / 10) * 10;
+}
+
+// get the length of an iterable object
+function getArrayLength(array) {
+  // looping threw all content of the all snakes, to get length
+  var len = 0;
+  for (var ignored in array) len++;
+  return len;
 }
 
 
@@ -624,7 +651,7 @@ function checkMaxPlayerCount() {
 
 // save the movement of other snakes to array
 function handleOtherSnakes() {
-  for(var playerName in otherSnakes) {
+  for (var playerName in otherSnakes) {
     var otherSnake = otherSnakes[playerName];
     
     if (otherSnake == null || otherSnake["pos"] == null) continue;
@@ -636,7 +663,7 @@ function handleOtherSnakes() {
 
 // check if the player collides with any other player
 function checkForCollisionWithOtherSnakes() {
-  for(var playerName in otherSnakes) {
+  for (var playerName in otherSnakes) {
     var otherSnake = otherSnakes[playerName]["pos"];
     
     if (otherSnake == null) continue;
@@ -758,7 +785,10 @@ function waitForChooseName() {
   if (getOnlinePlayers() == 0)
     gen_food();
   
-  // Start the main loop
+  // first reset the last graphics update time
+  timeLastGraphicsUpdate = Date.now();
+  
+  // then start the main loop
   loop();
   
   // starting the game
