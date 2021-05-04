@@ -6,11 +6,11 @@
 
   <body>
     <div id="status">Loading...</div>
-    
+
     <canvas id="snakeboard"></canvas>
-    
+
     <div id="sidebar"></div>
-    
+
 
     <style>
       #html, body {
@@ -37,7 +37,7 @@
       #retry {
         text-align: center;
       }
-      
+
       .button {
       position: absolute;
       border: none;
@@ -53,8 +53,8 @@
     }
 
     .retry {
-      background-color: white; 
-      color: black; 
+      background-color: white;
+      color: black;
       border: 2px solid #4CAF50;
     }
 
@@ -64,12 +64,19 @@
     }
     </style>
   </body>
-  
+
   <!-- Libs -->
   <script src="https://www.gstatic.com/firebasejs/8.4.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.4.1/firebase-database.js"></script>
   <!-- Originally from https://github.com/Automattic/Color.js -->
   <script src="color.js"></script>
 
+  <script>
+    var retryClicked = false;
+
+    function onRetryClick() {
+      retryClicked = true;
+    }
+  </script>
   <script src="script.js"></script>
 </html>

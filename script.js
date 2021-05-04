@@ -201,6 +201,12 @@
 
     // we always need to draw the snake, so if it's there, it will be shown
     drawSnake();
+
+    // retry button clicked
+    if (retryClicked) {
+      retryClicked = false;
+      onRetry();
+    }
   }
 
   // generate a random snake array which is 5 long (only start point is random, other 4 are relative to start point)
@@ -363,7 +369,7 @@
 
     // retry
     if (keyPressed === ENTER_KEY || keyPressed === R_KEY) {
-      onRetryClick();
+      onRetry();
     }
   }
 
@@ -402,7 +408,7 @@
   }
 
   // called when the retry button is clicked
-  function onRetryClick() {
+  function onRetry() {
     // if the player isn't alive, restart
     if (isGameEnded) {
       startGame();
