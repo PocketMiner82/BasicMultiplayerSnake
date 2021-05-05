@@ -19,6 +19,10 @@
   // countdown before start
   var countdown = 6;
 
+  // can we send data to database (we should be invisible for other players
+  // in countdown sequence, but visible for ourself)
+  var isInvisible = true;
+
   // our snake color
   var my_snake_col;
 
@@ -103,6 +107,7 @@
     // reset countdown
     countdown = 6;
     // reset snake pos to random position
+    isInvisible = true;
     snake = generateRandomSnake();
     // reset game isn't ended
     isGameEnded = false;
@@ -117,12 +122,12 @@
     if (countdown > 0 && countdown <= 3) {
       // countdown visible
       document.getElementById('status').innerHTML = countdown;
-      setTimeout(startCountdown, 1000);
+      setTimeout(startCountdown, 500);
       return;
     } else if (countdown > 0) {
       // "Get ready!" visible
       document.getElementById('status').innerHTML = "Get ready!";
-      setTimeout(startCountdown, 1000);
+      setTimeout(startCountdown, 500);
       return;
     } else {
       // if there is a snake on our position, wait for it to go away
@@ -139,6 +144,8 @@
 
       // countdown is finished, we don't need to wait
       countdown = 0;
+
+      isInvisible = false;
 
       // "Go" visible for 3 secs
       document.getElementById('status').innerHTML = "Go!";
@@ -685,6 +692,7 @@
 
   // save our playerdata to database
   function setPlayerData(snakeData) {
+    if (isInvisible) snakeData = [];
     firebase.database().ref("snake/players/" + name + "/pos").set(snakeData);
   }
 
