@@ -21,7 +21,7 @@
 
   // can we send data to database (we should be invisible for other players
   // in countdown sequence, but visible for ourself)
-  var isInvisible = true;
+  var isInvisibleForOthers = true;
 
   // our snake color
   var my_snake_col;
@@ -107,7 +107,7 @@
     // reset countdown
     countdown = 6;
     // reset snake pos to random position
-    isInvisible = true;
+    isInvisibleForOthers = true;
     snake = generateRandomSnake();
     // reset game isn't ended
     isGameEnded = false;
@@ -145,7 +145,7 @@
       // countdown is finished, we don't need to wait
       countdown = 0;
 
-      isInvisible = false;
+      isInvisibleForOthers = false;
 
       // "Go" visible for 3 secs
       document.getElementById('status').innerHTML = "Go!";
@@ -692,7 +692,7 @@
 
   // save our playerdata to database
   function setPlayerData(snakeData) {
-    if (isInvisible) snakeData = [];
+    if (isInvisibleForOthers) snakeData = [];
     firebase.database().ref("snake/players/" + name + "/pos").set(snakeData);
   }
 
