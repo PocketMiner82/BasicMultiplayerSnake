@@ -7,6 +7,17 @@
   // the delay between snake updates in ms
   const SNAKE_UPDATE_DELAY = 100;
 
+  // the food levels
+  const FOOD_LEVEL_LESS = 0;
+  const FOOD_LEVEL_MEDIUM = 1;
+  const FOOD_LEVEL_MUCH = 2;
+  const FOOD_LEVEL_RANDOM = 3;
+
+  // the food colors for the levels
+  const FOOD_LEVEL_LESS_COLOR = 175;
+  const FOOD_LEVEL_MEDIUM_COLOR = 110;
+  const FOOD_LEVEL_MUCH_COLOR = 0;
+
   // max player count (currently, set to the amount of colors, available)
   const MAX_PLAYERS = COLORS.length;
 
@@ -53,12 +64,11 @@
   // was the other snake data initialized from db?
   var firstInitOtherSnakes = false;
 
-  // food position
-  var food_x;
-  var food_y;
+  // food positions
+  var foods = [];
 
   // color of food (it will be in rainbow mode)
-  var foodColor = 0;
+  var foodLightness = 0;
 
   // Get the canvas element
   const snakeboard = document.getElementById("snakeboard");
@@ -191,7 +201,7 @@
     updateSideBar();
 
     clearBoard();
-    drawFood();
+    drawFoods();
     handleOtherSnakes();
 
     if (countdown != 0) {
@@ -241,12 +251,30 @@
     // add the new head to the beginning of snake body
     snake.unshift(head);
 
-    // did we eat food?
-    const has_eaten_food = snake[0].x === food_x && snake[0].y === food_y;
+    // did we ate food?
+    const ateFood = hasEatenFood();
 
-    if (has_eaten_food) {
-      // generate new food location and don't remove last part of snake, it get's one longer
-      gen_food();
+    if (ateFood) {
+      // handle collection of food and get the count, how many parts must be added
+      var count = foodLevelToCount(handleFoodCollect()) - 1;
+
+      if (count < 0) {
+        // we need to remove parts
+        for (var i = 0; i > count; i--) {
+          // but if the snake has just a length of 1, we don't remove more
+          if (snake.lenght == 1) break;
+          snake.pop();
+        }
+      } else {
+        // we need to add parts
+        for (var i = 0; i < count; i++) {
+          // adding the parts in the "walking" direction
+          var newPosX = snake[snake.length - 1].x - deltaX;
+          var newPosY = snake[snake.length - 1].y - deltaY;
+
+          snake[getArrayLength(snake)] = {x: newPosX, y: newPosY};
+        }
+      }
     } else {
       // remove the last part of snake body
       snake.pop();
@@ -291,21 +319,115 @@
     return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall;
   }
 
-  // generate a new random food location
-  function gen_food() {
-    // Generate a random number the food x-coordinate
-    food_x = randomCoordinateX();
-    // Generate a random number for the food y-coordinate
-    food_y = randomCoordinateY();
+  // check if a player has eaten a food
+  function hasEatenFood() {
+    var ateFood = false;
+    for (var foodKey in foods) {
+      var food = foods[foodKey];
+      if(snake[0].x === food.x && snake[0].y === food.y) {
+        ateFood = true;
+        break;
+      }
+    }
 
-    // save to database for multiplayer
-    setFoodPos(food_x, food_y);
+    return ateFood;
+  }
+
+  // save a new food position
+  function addFood(x, y, level) {
+    foods[foods.length] = {
+      "x": x,
+      "y": y,
+      "level": level
+    };
+
+    updateFoods();
+  }
+
+  // remove a food, this will also return the level of the food removed
+  function removeFood(x, y) {
+    // the new food data
+    var newFoods = [];
+    // the food level of the removed food
+    var foodLevel = FOOD_LEVEL_RANDOM;
+
+    i = 0;
+    for (var foodKey in foods) {
+      var food = foods[foodKey];
+      // getting the data of the other food
+      foodX = food.x;
+      foodY = food.y;
+
+      // if the data isn't equal to our data, we will add it to the new list
+      if (x != foodX || y != foodY) {
+        newFoods[i] = food;
+        i++;
+      } else foodLevel = food.level;
+    }
+
+    // update the food array
+    foods = newFoods;
+    updateFoods();
+
+    return foodLevel;
+  }
+
+  // handle the collection of food, this will also return the level of the removed food
+  function handleFoodCollect() {
+    // removing old food
+    var removedOldFoodLevel = removeFood(snake[0].x, snake[0].y);
+
+    // creating new food
+    var foodCount = Math.max(1, Math.round(getOnlinePlayers() / 2));
+    foodCount = foodCount - foods.length;
+
+    for (var i = 0; i < foodCount; i++) {
+      var randomFood;
+      var noFoodPosFound = true;
+
+      // search for a food pos, which isn't in use
+      while (noFoodPosFound) {
+        randomFood = genFood();
+
+        // there are no positions to check
+        if (foods.length == 0)
+          noFoodPosFound = false;
+
+        // check all other food positions to avoid overlap
+        for (var foodKey in foods) {
+          var food = foods[foodKey];
+          if (food.x != randomFood.x || food.y != randomFood.y)
+            noFoodPosFound = false;
+        }
+      }
+
+      // and add it
+      addFood(randomFood.x, randomFood.y, randomFoodLevel());
+    }
+
+    return removedOldFoodLevel;
+  }
+
+  // generate a new random food location
+  function genFood() {
+    // Generate a random number the food x-coordinate
+    var foodX = randomCoordinateX();
+    // Generate a random number for the food y-coordinate
+    var foodY = randomCoordinateY();
 
     // if the new food location is where the snake currently is, generate a new food location
-    snake.forEach(function has_snake_eaten_food(part) {
-      const has_eaten = part.x == food_x && part.y == food_y;
-      if (has_eaten) gen_food();
+    snake.forEach((part) => {
+      const has_eaten = part.x == foodX && part.y == foodY;
+      if (has_eaten) genFood();
     });
+
+    // if the new food location is where another snake currently is, generate a new food location
+    otherSnakes.forEach((part) => {
+      const has_eaten = part.x == foodX && part.y == foodY;
+      if (has_eaten) genFood();
+    });
+
+    return {"x": foodX, "y": foodY}
   }
 
 
@@ -485,10 +607,9 @@
 
   // Draw one snake part
   function drawSnakePart(snake_col, snakePart) {
-
     // Set the color of the snake part
     snakeboardCtx.fillStyle = snake_col;
-    // Set the border colour of the snake part
+    // Set the border color of the snake part
     snakeboardCtx.strokestyle = "black";
     // Draw a "filled" rectangle to represent the snake part at the coordinates
     // the part is located
@@ -498,11 +619,16 @@
   }
 
   // draw the food
-  function drawFood() {
-    snakeboardCtx.fillStyle = currentFoodColor();
-    snakeboardCtx.strokestyle = 'black';
-    snakeboardCtx.fillRect(food_x, food_y, 10, 10);
-    snakeboardCtx.strokeRect(food_x, food_y, 10, 10);
+  function drawFoods() {
+    // draw all the foods
+    for (var foodKey in foods) {
+      var food = foods[foodKey];
+
+      snakeboardCtx.fillStyle = currentFoodLightness(getFoodColorByLevel(food.level));
+      snakeboardCtx.strokestyle = 'black';
+      snakeboardCtx.fillRect(food.x, food.y, 10, 10);
+      snakeboardCtx.strokeRect(food.x, food.y, 10, 10);
+    }
   }
 
   // update side status bar
@@ -592,22 +718,70 @@
     return unusedColors;
   }
 
-  // get the current "rainbow" food color
-  function currentFoodColor() {
+  // get the current food color with the blink effect
+  function currentFoodLightness(foodColor) {
     // color is max hexa decimal
-    if (foodColor == 360) {
-      foodColor = 0;
+    if (foodLightness == 50) {
+      foodLightness = -50;
     }
 
     var hsv = {
       h: foodColor,
       s: 100,
-      v: 100,
+      v: (foodLightness < 0 ? (foodLightness * -1) : foodLightness) + 50,
     };
-    foodColor++;
+    foodLightness++;
     var color = Color( hsv );
 
     return color.toString();
+  }
+
+  // get the color for a food by the food level
+  function getFoodColorByLevel(level) {
+    switch (level) {
+      case FOOD_LEVEL_LESS:
+        return FOOD_LEVEL_LESS_COLOR;
+      case FOOD_LEVEL_MEDIUM:
+        return FOOD_LEVEL_MEDIUM_COLOR;
+      case FOOD_LEVEL_MUCH:
+        return FOOD_LEVEL_MUCH_COLOR;
+      case FOOD_LEVEL_RANDOM:
+        return randomInt(0, 30) * 10;
+      default:
+        return 0;
+    }
+  }
+
+  function randomFoodLevel() {
+    var rnd = randomInt(0, 300);
+
+    if (rnd >= 0 && rnd < 100) {
+      // less and medium are most common
+      return FOOD_LEVEL_LESS;
+    } else if (rnd >= 100 && rnd < 200) {
+      // less and medium are most common
+      return FOOD_LEVEL_MEDIUM;
+    } else if (rnd >= 200 && rnd < 250) {
+      // much and random are less common
+      return FOOD_LEVEL_MUCH;
+    } else {
+      // much and random are less common
+      return FOOD_LEVEL_RANDOM;
+    }
+  }
+
+  // convert the food level count to the count of the parts that must be added/removed
+  function foodLevelToCount(level) {
+    switch (level) {
+      case FOOD_LEVEL_LESS:
+      case FOOD_LEVEL_MEDIUM:
+      case FOOD_LEVEL_MUCH:
+        return level + 1;
+      case FOOD_LEVEL_RANDOM:
+        return randomInt(-5, 5);
+      default:
+        return 0;
+    }
   }
 
   // escape html specific characters (like < or >)
@@ -696,22 +870,17 @@
     firebase.database().ref("snake/players/" + name + "/pos").set(snakeData);
   }
 
-  // save a new food position
-  function setFoodPos(x, y) {
-    firebase.database().ref("snake/food").set({
-      "x": x,
-      "y": y
-    });
-    return false;
+  // save the foods data to database
+  function updateFoods() {
+    firebase.database().ref("snake/foods").set(foods);
   }
 
   // set the listeners for firebase
   function setFireBaseListeners() {
-    // value of food changed, update it
-    firebase.database().ref("snake/food").on("value", (snapshot) => {
+    // value of foods changed, update it
+    firebase.database().ref("snake/foods").on("value", (snapshot) => {
       data = snapshot.val();
-      food_x = data["x"];
-      food_y = data["y"];
+      foods = data == null ? [] : data;
     });
 
     // listen for other snake(s) changes
@@ -796,9 +965,9 @@
 
     firebase.database().ref("snake/players/" + name + "/color").set(my_snake_col);
 
-    // gen food, if this is the first player
-    if (getOnlinePlayers() == 0)
-      gen_food();
+    // handle food, if this is the first player
+    if (getOnlinePlayers() <= 1 && foods.length == 0)
+      addFood(randomCoordinateX(), randomCoordinateY(), randomFoodLevel());
 
     // first reset the last graphics update time
     timeLastGraphicsUpdate = Date.now();
