@@ -70,6 +70,9 @@
   // color of food (it will be in rainbow mode)
   var foodLightness = 0;
 
+  // if not negative, only this type of food will spawn
+  var forcedFoodLevel = -1;
+
   // Get the canvas element
   const snakeboard = document.getElementById("snakeboard");
   // Return a two dimensional drawing context
@@ -776,6 +779,11 @@
   }
 
   function randomFoodLevel() {
+    // if there is a food level forced by database, use it
+    if (forcedFoodLevel >= 0) {
+      return forcedFoodLevel;
+    }
+
     var rnd = randomInt(0, 300);
 
     if (rnd >= 0 && rnd < 100) {
@@ -919,6 +927,12 @@
     firebase.database().ref("snake/foods").on("value", (snapshot) => {
       data = snapshot.val();
       foods = data == null ? [] : data;
+    });
+
+    // the food spawn type is forced by database
+    firebase.database().ref("snake/forcedFoodLevel").on("value", (snapshot) => {
+      data = snapshot.val();
+      forcedFoodLevel = data == null ? -1 : data;
     });
 
     // listen for other snake(s) changes
