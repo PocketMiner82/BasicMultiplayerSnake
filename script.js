@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 1;
+  const VERSION = 2;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -720,11 +720,33 @@
   function handleVersionCheck() {
     do {
         if (dbVersion > VERSION) {
+          versionChecked = true;
+          // clear our snake from db
+          snake = [];
+          setPlayerData([]);
+
+          // we need to wait for the player data to be updated.
+          for (var playerName in allSnakes) {
+            otherSnake = snake[playerName];
+            if (playerName == name && !(otherSnake == null || getArrayLength(otherSnake) == 0)) return;
+          }
+
           versionChecked = false;
           // client outdated
           alert("Client veraltet. Bitte schlie\u00DFe den Tab, l\u00F6sche s\u00E4mtliche Cookies und Daten dieser Website und \u00F6ffne den Tab erneut.\n"
             + "Am Einfachsten ist es, wenn du deine gesamten Browserdaten l\u00F6schst.");
         } else if (dbVersion < VERSION) {
+          versionChecked = true;
+          // clear our snake from db
+          snake = [];
+          setPlayerData([]);
+
+          // we need to wait for the player data to be updated.
+          for (var playerName in allSnakes) {
+            otherSnake = snake[playerName];
+            if (playerName == name && !(otherSnake == null || getArrayLength(otherSnake) == 0)) return;
+          }
+
           versionChecked = false;
           // db outdated
           alert("Datenbank veraltet. Bitte warte auf ein Update der Datenbank, schlie\u00DFe den Tab und \u00F6ffne ihn erneut.");
