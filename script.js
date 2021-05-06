@@ -158,12 +158,7 @@
       isInvisibleForOthers = false;
 
       // "Go" visible for 3 secs
-      document.getElementById('status').innerHTML = "Go!";
-      setTimeout(() => {
-        // hide, if the innerHTML is still "Go!"
-        if (document.getElementById('status').innerHTML === "Go!")
-          document.getElementById('status').style.visibility = 'hidden';
-      }, 3000);
+      sendInfo("Go!", 3000);
     }
   }
 
@@ -262,7 +257,7 @@
         // we need to remove parts
         for (var i = 0; i > count; i--) {
           // but if the snake has just a length of 1, we don't remove more
-          if (snake.lenght == 1) break;
+          if (getArrayLength(snake) == 1) break;
           snake.pop();
         }
       } else {
@@ -274,6 +269,17 @@
 
           snake[getArrayLength(snake)] = {x: newPosX, y: newPosY};
         }
+      }
+
+      count++;
+
+      // show the player, how many points he got/lost
+      if (count > 0) {
+        sendInfo("+" + count + "0", 500, "LimeGreen");
+      } else if (count == 0) {
+        sendInfo("0", 500);
+      } else if (count < 0) {
+        sendInfo("-" + count + "0", 500, "Red");
       }
     } else {
       // remove the last part of snake body
@@ -378,7 +384,7 @@
     var removedOldFoodLevel = removeFood(snake[0].x, snake[0].y);
 
     // creating new food
-    var foodCount = Math.max(1, Math.round(getOnlinePlayers() / 2));
+    var foodCount = Math.max(1, Math.round(getActivePlayers() / 2));
     foodCount = foodCount - foods.length;
 
     for (var i = 0; i < foodCount; i++) {
@@ -669,6 +675,21 @@
       + formattedScore;
   }
 
+  // send an info to the status display
+  function sendInfo(str, duration, color) {
+    color = color || "Black";
+
+    // show
+    document.getElementById('status').style.visibility = 'visible';
+    // set text
+    document.getElementById('status').innerHTML = '<div style="color:' + color + ';">' + str + '</div>';
+    setTimeout(() => {
+      // hide, if the innerHTML is still the given string and color
+      if (document.getElementById('status').innerHTML === '<div style="color:' + color + ';">' + str + '</div>')
+        document.getElementById('status').style.visibility = 'hidden';
+    }, duration);
+  }
+
 
 
   /* -------------------------
@@ -827,6 +848,21 @@
   // get the current online players
   function getOnlinePlayers() {
     return getArrayLength(allSnakes);
+  }
+
+  // get the players, currently playing
+  function getActivePlayers() {
+    var count = 0;
+
+    // go threw all snakes
+    for (var playerName in allSnakes) {
+      var snake = allSnakes[playerName];
+
+      // check if the snake is playing, by checking if there are positions set
+      if (snake.pos != null && getArrayLength(snake.pos) != 0) count++;
+    }
+
+    return count
   }
 
   // check if there are more players online, then max player count
