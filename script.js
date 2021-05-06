@@ -1,4 +1,6 @@
 ! function() {
+  const VERSION = 1;
+
   const BOARD_BACKGROUND = "LightGrey";
 
   const COLORS = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange",
@@ -20,6 +22,13 @@
 
   // max player count (currently, set to the amount of colors, available)
   const MAX_PLAYERS = COLORS.length;
+
+
+  // is the version checking finished?
+  var versionChecked = false;
+
+  // the db version
+  var dbVersion = 0;
 
   // the time of the last graphics update
   var timeLastGraphicsUpdate = 0;
@@ -707,6 +716,25 @@
 
 
 
+  // check if the version is equal to the version of the database
+  function handleVersionCheck() {
+    do {
+        if (dbVersion > VERSION) {
+          versionChecked = false;
+          // client outdated
+          alert("Client veraltet. Bitte schlie\u00DFe den Tab, l\u00F6sche s\u00E4mtliche Cookies und Daten dieser Website und \u00F6ffne den Tab erneut.\n"
+            + "Am Einfachsten ist es, wenn du deine gesamten Browserdaten l\u00F6schst.");
+        } else if (dbVersion < VERSION) {
+          versionChecked = false;
+          // db outdated
+          alert("Datenbank veraltet. Bitte warte auf ein Update der Datenbank, schlie\u00DFe den Tab und \u00F6ffne ihn erneut.");
+        } else {
+          // everything up-to-date
+          versionChecked = true;
+        }
+    } while (!versionChecked);
+  }
+
   // get random color for our snake, that isn't used
   function getRandomColor() {
     var unusedColors = getUnusedColors();
@@ -973,10 +1001,36 @@
 
 
   function main() {
+    alert("Wir verwenden Cookies. Mit der Verwendung der Seite erkl\u00E4rst du dich damit einverstanden.\n"
+      + "\n"
+      + "Wir verwenden die Echtzeitdatenbank (Realtime Database) von Google Firebase, um Multiplayer bereitzustellen; wie deine Daten verarbeitet werden, erfährst du auf der Seite von Google: https://firebase.google.com/support/privacy/\n"
+      + "\n"
+      + "Wenn du nicht einverstanden bist, schlie\u00DFe diese Seite; es wurden noch keine Daten gespeichert.");
+
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
 
-    // listener for key press and window resize
+    // always get the version of db
+    firebase.database().ref("snake/version").on("value", (snapshot) => {
+      data = snapshot.val();
+      dbVersion = parseInt(data, 10);
+
+      // handle version check
+      handleVersionCheck();
+    });
+
+    // and wait for receiving data
+    waitForVersionCheck();
+  }
+
+  // waiting for the version check
+  function waitForVersionCheck() {
+    if (!versionChecked) {
+      setTimeout(waitForVersionCheck, 50);
+      return;
+    }
+
+    // listener for key press, window resize and snakeboard touch
     document.addEventListener("keydown", onKeyPress);
     window.addEventListener("resize", onResizeWindow, false);
     snakeboard.addEventListener("click", onSnakeboardClick);
@@ -987,9 +1041,9 @@
     setFireBaseListeners();
 
     waitForPlayerData();
-  }
+}
 
-  // wait to receive playerdata from other players
+// wait to receive playerdata from other players
   function waitForPlayerData() {
     if (!firstInitOtherSnakes) {
       setTimeout(waitForPlayerData, 50);
