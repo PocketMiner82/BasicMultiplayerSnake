@@ -635,6 +635,9 @@
       snakeboardCtx.fillRect(food.x, food.y, 10, 10);
       snakeboardCtx.strokeRect(food.x, food.y, 10, 10);
     }
+
+    // increase lightness
+    foodLightness++;
   }
 
   // update side status bar
@@ -751,7 +754,6 @@
       s: 100,
       v: (foodLightness < 0 ? (foodLightness * -1) : foodLightness) + 50,
     };
-    foodLightness++;
     var color = Color( hsv );
 
     return color.toString();
