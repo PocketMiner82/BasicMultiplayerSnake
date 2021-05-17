@@ -1,0 +1,23 @@
+{
+  "rules": {
+    // read is always allowed
+    ".read": true,
+    "messages": {
+    	".write": true
+    },
+
+    "snake": {
+      "players": {
+        "$uid": {
+          // only allow writing if this is new data or if this is the user, that created the data
+          ".write": "(!data.exists()) || (data.child('verifyName').exists() && data.child('verifyName').val() == $uid)"
+        }
+      },
+
+      // every player can write food data
+      "foods": {
+        ".write": true
+      }
+    }
+  }
+}

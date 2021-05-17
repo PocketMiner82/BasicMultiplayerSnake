@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 3;
+  const VERSION = 4;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -54,6 +54,9 @@
 
   // our snake
   var snake = [];
+
+  // the last score we had, to display it after death in title
+  var lastScore = 0;
 
   // are we changing direction?
   var changingDirection = false;
@@ -448,6 +451,21 @@
     return {"x": foodX, "y": foodY}
   }
 
+  function dropRandomFood() {
+    // don't drop, if player has score 0
+    if (getArrayLength(snake) <= 5)
+      return;
+
+    for (var key in snake) {
+      var pos = snake[key];
+
+      // drop random food at random positions in snake, 20% probability to drop for each,
+      // this will only spawn random foods
+      if (randomInt(0, 4) == 0)
+        addFood(pos.x, pos.y, FOOD_LEVEL_RANDOM);
+    }
+  }
+
 
 
   /* -------------------------
@@ -465,11 +483,16 @@
 
     // remove our snake from the board
     setPlayerData([]);
+    // drop random food from out snake
+    dropRandomFood();
     snake = [];
 
     // show retry button and game over message
     document.getElementById('status').style.visibility = 'visible';
-    document.getElementById('status').innerHTML = '<b><div style=\"color: Red; display: inline;\">Game Over!</div></b> <button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
+    document.getElementById('status').innerHTML = '<b><span style=\"color: Red; display: inline;\"> Game Over!</span></b> <button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
+
+    document.getElementById('score').style.visibility = 'visible';
+    document.getElementById('score').innerHTML = 'Your score: ' + lastScore;
   }
 
   // called, when the window is resized by user
@@ -558,6 +581,7 @@
   function onRetry() {
     // if the player isn't alive, restart
     if (isGameEnded) {
+      document.getElementById('score').style.visibility = 'hidden';
       startGame();
     }
   }
@@ -661,6 +685,8 @@
     // put all the scores and the player name in array
     for (var playerName in allSnakes) {
       var score = ((getArrayLength(allSnakes[playerName]["pos"]) - 5) * 10);
+      lastScore = score >= 0 && playerName == name ? score : lastScore;
+
       scores[i] = {
         "score": score,
         "playerName": playerName
@@ -683,7 +709,7 @@
 
       // add the data as html to the score string
       formattedScore += "<span style=\"color:" + snakeData["color"] + ";text-shadow: 1px 0 black, -1px 0 black, 0 1px black, 0 -1px black, 1px 1px black, -1px -1px black, -1px 1px black, 1px -1px black;\">"
-      + htmlEntities(playerName) + "</span>: " + score + "<br>";
+      + htmlEntities(playerName) + "</span>: " + (score < -40 ? "Spectator" : score) + "<br>";
     }
 
     document.getElementById('sidebar').innerHTML = "Online: " + getOnlinePlayers() + "/15<br><br>"
