@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 4;
+  const VERSION = 5;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -459,10 +459,14 @@
     for (var key in snake) {
       var pos = snake[key];
 
-      // drop random food at random positions in snake, 20% probability to drop for each,
-      // this will only spawn random foods
-      if (randomInt(0, 4) == 0)
-        addFood(pos.x, pos.y, FOOD_LEVEL_RANDOM);
+      // ignore this pos, if it is in the wall...
+      if ((pos.x < 0 || pos.x > (snakeboardMaxX - 10))
+          || (pos.y < 0 || pos.y > (snakeboardMaxY - 10)))
+        continue;
+
+      // drop random food at random positions in snake, ca. 16,67% probability to drop for each
+      if (randomInt(0, 5) == 0)
+        addFood(pos.x, pos.y, randomFoodLevel());
     }
   }
 
