@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 2;
+  const VERSION = 3;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -733,8 +733,8 @@
 
           versionChecked = false;
           // client outdated
-          alert("Client veraltet. Bitte schlie\u00DFe den Tab, l\u00F6sche s\u00E4mtliche Cookies und Daten dieser Website und \u00F6ffne den Tab erneut.\n"
-            + "Am Einfachsten ist es, wenn du deine gesamten Browserdaten l\u00F6schst.");
+          alert("Client outdated. Please close the tab, delete all cookies and data from this page and reopen this page.\n"
+            + "The easiest way is to delete all your browsing data.");
         } else if (dbVersion < VERSION) {
           versionChecked = true;
           // clear our snake from db
@@ -749,7 +749,7 @@
 
           versionChecked = false;
           // db outdated
-          alert("Datenbank veraltet. Bitte warte auf ein Update der Datenbank, schlie\u00DFe den Tab und \u00F6ffne ihn erneut.");
+          alert("Database outdated. Please wait for the database to update, then reopen this tab.");
         } else {
           // everything up-to-date
           versionChecked = true;
@@ -1023,11 +1023,11 @@
 
 
   function main() {
-    alert("Wir verwenden Cookies. Mit der Verwendung der Seite erkl\u00E4rst du dich damit einverstanden.\n"
+    alert("We use cookies. By using this site, you agree with it.\n"
       + "\n"
-      + "Wir verwenden die Echtzeitdatenbank (Realtime Database) von Google Firebase, um Multiplayer bereitzustellen; wie deine Daten verarbeitet werden, erfährst du auf der Seite von Google: https://firebase.google.com/support/privacy/\n"
+      + "We use the Realtime Database of Google Firebase, to serve multiplayer. If you want to know how Google proceeds your data, look on their page: https://firebase.google.com/support/privacy/\n"
       + "\n"
-      + "Wenn du nicht einverstanden bist, schlie\u00DFe diese Seite; es wurden noch keine Daten gespeichert.");
+      + "If you don't want to agree, close this site. No data has been saved yet.");
 
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
@@ -1084,7 +1084,11 @@
       return;
     }
 
-    // name set successfully, we can run the game now
+    // name set successfully, we can run the game now  and we need to save the name
+    // in a separate key to get access to write our data later, this will also restrict
+    // the access to this entry only for us
+    firebase.database().ref("snake/players/" + name + "/verifyName").set(name);
+
     // if player disconnect, remove data
     firebase.database().ref("snake/players/" + name).onDisconnect().remove();
 
