@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 5;
+  const VERSION = 6;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -549,7 +549,7 @@
 
   // if the snakeboard is clicked, get the pos of the click and send it
   function onSnakeboardClick(e) {
-    var canvas = e.target;
+    var canvas = snakeboard;
     // abs. size of element
     var rect = canvas.getBoundingClientRect();
     // relationship bitmap vs. element for X
@@ -557,8 +557,8 @@
     // relationship bitmap vs. element for Y
     var scaleY = snakeboardCalculatedHeight / snakeboardMaxY;
 
-    const x = (e.clientX - rect.left) / scaleX;
-    const y = (e.clientY - rect.top) / scaleY;
+    const x = (e.touches[0].clientX - rect.left) / scaleX;
+    const y = (e.touches[0].clientY - rect.top) / scaleY;
 
     // Prevent the snake from reversing
     if (changingDirection) return;
@@ -1085,7 +1085,7 @@
     // listener for key press, window resize and snakeboard touch
     document.addEventListener("keydown", onKeyPress);
     window.addEventListener("resize", onResizeWindow, false);
-    snakeboard.addEventListener("click", onSnakeboardClick);
+    snakeboard.addEventListener("touchstart", onSnakeboardClick);
 
     // first resize manually
     onResizeWindow();
