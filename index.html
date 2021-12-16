@@ -90,6 +90,12 @@
     function onRetryClick() {
       retryClicked = true;
     }
+
+    window.scrollTo(0,1);
+
+    window.addEventListener("orientationchange", function() {
+      window.scrollTo(0,1);
+    }, false);
   </script>
   <script src="script.min.js"></script>
 </html>
