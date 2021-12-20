@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 6;
+  const VERSION = 7;
 
   const BOARD_BACKGROUND = "LightGrey";
 
