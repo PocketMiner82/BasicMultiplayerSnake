@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 8;
+  const VERSION = 9;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -493,10 +493,10 @@
 
     // show retry button and game over message
     document.getElementById('status').style.visibility = 'visible';
-    document.getElementById('status').innerHTML = '<b><span style=\"color: Red; display: inline;\"> Game Over!</span></b> <button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
+    document.getElementById('status').innerHTML = '<b><span style=\"color: Red; display: inline;\"> Game Over!</span></b>';
 
     document.getElementById('score').style.visibility = 'visible';
-    document.getElementById('score').innerHTML = 'Your score: ' + lastScore;
+    document.getElementById('score').innerHTML = 'Your score: ' + lastScore + '<button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
   }
 
   // called, when the window is resized by user

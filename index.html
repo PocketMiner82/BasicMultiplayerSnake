@@ -2,7 +2,7 @@
 <html>
   <head>
   	<title>Snake Game</title>
-      <meta name="viewport" 
+      <meta name="viewport"
       content="user-scalable=0">
   </head>
 
@@ -14,7 +14,7 @@
     <div id="sidebar"></div>
 
     <div id="score"></div>
-    
+
     <div id="scrollable"><br>42</div>
 
     <style>
@@ -26,30 +26,38 @@
       }
       #snakeboard {
         position: absolute;
-        top: 60%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        top: 50%;
+        left: 99%;
+        transform: translate(-100%, -50%);
       }
       #sidebar {
         text-align: left;
         font-size: 25px;
+        margin-left: 15px;
+        margin-top: 15px;
       }
       #status {
+        font-size: 50px;
+        width: 30%;
+        height: 10%
+        margin: left;
         text-align: center;
-        font-size: 75px;
       }
       #retry {
         text-align: center;
       }
       #score {
         position: absolute;
-        font-size: 50px;
+        font-size: 25px;
         visibility: hidden;
         left: 50%;
         bottom: 1%;
+        width: 92%;
+        margin-left: 4%;
+        text-align: left;
         transform: translate(-50%, -50%);
       }
-      
+
       #scrollable {
         position: absolute;
         font-size: 50px;
@@ -60,29 +68,29 @@
       }
 
       .button {
-      position: absolute;
-      border: none;
-      color: white;
-      padding: 16px 16px;
-      text-align: center;
-      text-decoration: none;
-      display: inline-block;
-      font-size: 32px;
-      margin: 8px 16px;
-      transition-duration: 0.4s;
-      cursor: pointer;
-    }
+        position: absolute;
+        border: none;
+        color: white;
+        padding: 10px 10px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: -6px 16px;
+        transition-duration: 0.4s;
+        cursor: pointer;
+      }
 
-    .retry {
-      background-color: white;
-      color: black;
-      border: 2px solid #4CAF50;
-    }
+      .retry {
+        background-color: white;
+        color: black;
+        border: 2px solid #4CAF50;
+      }
 
-    .retry:hover {
-      background-color: #4CAF50;
-      color: white;
-    }
+      .retry:hover {
+        background-color: #4CAF50;
+        color: white;
+      }
     </style>
   </body>
 
