@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 9;
+  const VERSION = 10;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -78,6 +78,9 @@
 
   // food positions
   var foods = [];
+
+  // how long should the snake tail stay in place, after a food was eaten?
+  var tailWaitCount = 0;
 
   // color of food (it will be in rainbow mode)
   var foodLightness = 0;
@@ -276,14 +279,9 @@
           snake.pop();
         }
       } else {
-        // we need to add parts
-        for (var i = 0; i < count; i++) {
-          // adding the parts in the "walking" direction
-          var newPosX = snake[snake.length - 1].x - deltaX;
-          var newPosY = snake[snake.length - 1].y - deltaY;
-
-          snake[getArrayLength(snake)] = {x: newPosX, y: newPosY};
-        }
+        // we need to add parts, so add the count to our wait count so the end will stop
+        // and wait until the var is zero again
+        tailWaitCount += count;
       }
 
       count++;
@@ -296,9 +294,11 @@
       } else if (count < 0) {
         sendInfo(count + "0", 1000, "Red");
       }
-    } else {
+    } else if (tailWaitCount <= 0) {
       // remove the last part of snake body
       snake.pop();
+    } else {
+      tailWaitCount--;
     }
   }
 
@@ -688,7 +688,7 @@
     i = 0;
     // put all the scores and the player name in array
     for (var playerName in allSnakes) {
-      var score = ((getArrayLength(allSnakes[playerName]["pos"]) - 5) * 10);
+      var score = ((getArrayLength(allSnakes[playerName]["pos"]) - 5));
       lastScore = score >= 0 && playerName == name ? score : lastScore;
 
       scores[i] = {
@@ -713,7 +713,7 @@
 
       // add the data as html to the score string
       formattedScore += "<span style=\"color:" + snakeData["color"] + ";text-shadow: 1px 0 black, -1px 0 black, 0 1px black, 0 -1px black, 1px 1px black, -1px -1px black, -1px 1px black, 1px -1px black;\">"
-      + htmlEntities(playerName) + "</span>: " + (score < -40 ? "Spectator" : score) + "<br>";
+      + htmlEntities(playerName) + "</span>: " + (score < -4 ? "Spectator" : score) + "<br>";
     }
 
     document.getElementById('sidebar').innerHTML = "Online: " + getOnlinePlayers() + "/15<br><br>"
