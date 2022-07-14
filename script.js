@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 10;
+  const VERSION = 11;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -288,11 +288,11 @@
 
       // show the player, how many points he got/lost
       if (count > 0) {
-        sendInfo("+" + count + "0", 1000, "LimeGreen");
+        sendInfo("+" + count, 1000, "LimeGreen");
       } else if (count == 0) {
         sendInfo("0", 1000);
       } else if (count < 0) {
-        sendInfo(count + "0", 1000, "Red");
+        sendInfo(count, 1000, "Red");
       }
     } else if (tailWaitCount <= 0) {
       // remove the last part of snake body
