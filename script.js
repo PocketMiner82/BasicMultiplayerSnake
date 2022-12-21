@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 11;
+  const VERSION = 12;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -1010,7 +1010,7 @@
     });
 
     // the food spawn type is forced by database
-    firebase.database().ref("snake/forcedFoodLevel").on("value", (snapshot) => {
+    firebase.database().ref("snake/variables/forcedFoodLevel").on("value", (snapshot) => {
       data = snapshot.val();
       forcedFoodLevel = data == null ? -1 : data;
     });
@@ -1063,7 +1063,7 @@
     firebase.initializeApp(firebaseConfig);
 
     // always get the version of db
-    firebase.database().ref("snake/version").on("value", (snapshot) => {
+    firebase.database().ref("snake/variables/version").on("value", (snapshot) => {
       data = snapshot.val();
       dbVersion = parseInt(data, 10);
 
