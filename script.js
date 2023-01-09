@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 12;
+  const VERSION = 13;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -359,7 +359,8 @@
     foods[foods.length] = {
       "x": x,
       "y": y,
-      "level": level
+      "level": level,
+      "uuid": crypto.randomUUID()
     };
 
     updateFoods();
