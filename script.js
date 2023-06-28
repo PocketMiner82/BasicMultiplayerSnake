@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 13;
+  const VERSION = 14;
 
   const BOARD_BACKGROUND = "LightGrey";
 
@@ -87,6 +87,9 @@
 
   // if not negative, only this type of food will spawn
   var forcedFoodLevel = -1;
+
+  // food count multiplied by this factor
+  var foodFactor = 1;
 
   // Get the canvas element
   const snakeboard = document.getElementById("snakeboard");
@@ -400,7 +403,7 @@
     var removedOldFoodLevel = removeFood(snake[0].x, snake[0].y);
 
     // creating new food
-    var foodCount = Math.max(1, Math.round(getActivePlayers() / 2));
+    var foodCount = Math.max(1, Math.round(getActivePlayers() / 2)) * foodFactor;
     foodCount = foodCount - foods.length;
 
     for (var i = 0; i < foodCount; i++) {
@@ -1014,6 +1017,12 @@
     firebase.database().ref("snake/variables/forcedFoodLevel").on("value", (snapshot) => {
       data = snapshot.val();
       forcedFoodLevel = data == null ? -1 : data;
+    });
+
+    // the food factor is changed
+    firebase.database().ref("snake/variables/foodFactor").on("value", (snapshot) => {
+      data = snapshot.val();
+      foodFactor = data == null ? 1 : data;
     });
 
     // listen for other snake(s) changes
