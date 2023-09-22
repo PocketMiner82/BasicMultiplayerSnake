@@ -1,7 +1,7 @@
 ! function() {
   const VERSION = 14;
 
-  const BOARD_BACKGROUND = "LightGrey";
+  const BOARD_BACKGROUND = "#555555";
 
   const COLORS = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange",
   "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
@@ -497,7 +497,7 @@
 
     // show retry button and game over message
     document.getElementById('status').style.visibility = 'visible';
-    document.getElementById('status').innerHTML = '<b><span style=\"color: Red; display: inline;\"> Game Over!</span></b>';
+    document.getElementById('status').innerHTML = '<b><span style=\"color: tomato; display: inline;\"> Game Over!</span></b>';
 
     document.getElementById('score').style.visibility = 'visible';
     document.getElementById('score').innerHTML = 'Your score: ' + lastScore + '<button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
@@ -716,7 +716,7 @@
       var snakeData = allSnakes[playerName];
 
       // add the data as html to the score string
-      formattedScore += "<span style=\"color:" + snakeData["color"] + ";text-shadow: 1px 0 black, -1px 0 black, 0 1px black, 0 -1px black, 1px 1px black, -1px -1px black, -1px 1px black, 1px -1px black;\">"
+      formattedScore += "<span id=\"scoreboard\" style=\"color:" + snakeData["color"] + ";text-shadow: 1px 0 black, -1px 0 black, 0 1px black, 0 -1px black, 1px 1px black, -1px -1px black, -1px 1px black, 1px -1px black;\">"
       + htmlEntities(playerName) + "</span>: " + (score < -4 ? "Spectator" : score) + "<br>";
     }
 
@@ -735,7 +735,7 @@
     setTimeout(() => {
       // hide, if the innerHTML is still the given string and color
       if (document.getElementById('status').innerHTML === '<div style="color:' + color + ';">' + str + '</div>')
-        document.getElementById('status').style.visibility = 'hidden';
+        document.getElementById('status').innerHTML = '<div style="color: transparent;">42</div';
     }, duration);
   }
 
