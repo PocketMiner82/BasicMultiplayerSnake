@@ -1,5 +1,6 @@
 * {
-  margin: 5px;
+  margin: 10px;
+  padding: 5px;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -21,13 +22,11 @@
     border: 0;
     display: grid;
     grid-template-rows: [row1-start] 8vh [row1-end row2-start] 80vh [row2-end row3-start] 5vh [row3-end];
-    grid-template-columns: [column1-start] 22% [column1-end column2-start] 60% [column2-end];
-    gap: 10px;
+    grid-template-columns: [column1-start] 15% [column1-end column2-start] 50% [column2-end];
+    gap: 0px;
   }
   #snakeboard {
     position: relative;
-    /*top: 50%;*/
-    left: 22px;
     grid-column-start: column2-start;
     grid-column-end: column2-end;
     grid-row-start: row2-start;
@@ -36,7 +35,6 @@
     background-color: #555555;
     border: 2px solid #767676;
     border-radius: 10px;
-    backdrop-filter: blur(6.5px);
   }
   #sidebar {
     grid-column-start: column1-start;
@@ -97,7 +95,11 @@
   }
 
   .button {
-    position: absolute;
+    position: relative;
+    grid-column-start: column2-start;
+    grid-column-end: column2-end;
+    grid-row-start: row3-start;
+    grid-row-end: row3-end;
     border: none;
     color: white;
     padding: 10px 10px;
@@ -125,10 +127,10 @@
   }
 
   #scoreboard{
-    grid-column-start: 1;
-    grid-column-end: 2;
-    grid-row-start: 3;
-    grid-row-end: end;
+    grid-column-start: column1-start;
+    grid-column-end: column2-end;
+    grid-row-start: row2-start;
+    grid-row-end: row3-end;
     background-color: #797979;
     padding: 0.5px;
     margin: 0.5px;
