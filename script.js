@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 14;
+  const VERSION = 15;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -22,6 +22,18 @@
 
   // max player count (currently, set to the amount of colors, available)
   const MAX_PLAYERS = COLORS.length;
+
+  // Get the canvas element
+  const snakeboard = document.getElementById("snakeboard");
+  // Return a two dimensional drawing context
+  const snakeboardCtx = snakeboard.getContext("2d");
+
+  // set the coordinate system dimensions (always 16:9)
+  const snakeboardMaxX = 1280;
+  const snakeboardMaxY = 720;
+
+  // the default snake move delta and snake square size
+  const DELTA = 16;
 
 
   // is the version checking finished?
@@ -62,7 +74,7 @@
   var changingDirection = false;
 
   // horizontal snake move delta
-  var deltaX = 10;
+  var deltaX = DELTA;
 
   // vertical snake move delta
   var deltaY = 0;
@@ -90,15 +102,6 @@
 
   // food count multiplied by this factor
   var foodFactor = 1;
-
-  // Get the canvas element
-  const snakeboard = document.getElementById("snakeboard");
-  // Return a two dimensional drawing context
-  const snakeboardCtx = snakeboard.getContext("2d");
-
-  // set the coordinate system dimensions (always 16:9)
-  const snakeboardMaxX = 1280;
-  const snakeboardMaxY = 720;
 
   // the calculated width and height of the canvas (based on screen size)
   var snakeboardCalculatedWidth;
@@ -152,25 +155,28 @@
     countdown--;
     if (countdown > 0 && countdown <= 3) {
       // countdown visible
-      document.getElementById('status').innerHTML = countdown;
+      sendInfo(countdown);
+      //document.getElementById('status').innerHTML = countdown;
       setTimeout(startCountdown, 500);
       return;
     } else if (countdown > 0) {
       // "Get ready!" visible
-      document.getElementById('status').innerHTML = "Get ready!";
+      //document.getElementById('status').innerHTML = "Get ready!";
+      sendInfo("Get ready!");
       setTimeout(startCountdown, 500);
       return;
     } else {
       // if there is a snake on our position, wait for it to go away
       if (checkForCollisionWithOtherSnakes()) {
         countdown = -1;
-        document.getElementById('status').innerHTML = "Waiting for other snake to go away...";
+        //document.getElementById('status').innerHTML = "Waiting for other snake to go away...";
+        sendInfo("Waiting for other snake to go away...", color="Red");
         setTimeout(startCountdown, 50);
         return;
       }
 
       // reset go direction
-      deltaX = 10;
+      deltaX = DELTA;
       deltaY = 0;
 
       // countdown is finished, we don't need to wait
@@ -252,7 +258,7 @@
 
     // just fill the array with 5 coordinate pairs, the x is descending, the higher the key is
     for (var i = 0; i<5; i++) {
-      var currentPart = i * 10;
+      var currentPart = i * DELTA;
       snakeCoords[i] = {x: randomX - currentPart, y: randomY};
     }
 
@@ -310,18 +316,18 @@
     // going up
     if (up) {
       deltaX = 0;
-      deltaY = -10;
+      deltaY = -DELTA;
     // going left
     } else if (left) {
-      deltaX = -10;
+      deltaX = -DELTA;
       deltaY = 0;
     // going down
     } else if (down) {
       deltaX = 0;
-      deltaY = 10;
+      deltaY = DELTA;
     // going right
     } else if (right) {
-      deltaX = 10;
+      deltaX = DELTA;
       deltaY = 0;
     }
   }
@@ -337,9 +343,9 @@
 
     // check for collission with wall
     const hitLeftWall = snake[0].x < 0;
-    const hitRightWall = snake[0].x > snakeboardMaxX - 10;
+    const hitRightWall = snake[0].x > snakeboardMaxX - DELTA;
     const hitToptWall = snake[0].y < 0;
-    const hitBottomWall = snake[0].y > snakeboardMaxY - 10;
+    const hitBottomWall = snake[0].y > snakeboardMaxY - DELTA;
     return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall;
   }
 
@@ -464,8 +470,8 @@
       var pos = snake[key];
 
       // ignore this pos, if it is in the wall...
-      if ((pos.x < 0 || pos.x > (snakeboardMaxX - 10))
-          || (pos.y < 0 || pos.y > (snakeboardMaxY - 10)))
+      if ((pos.x < 0 || pos.x > (snakeboardMaxX - DELTA))
+          || (pos.y < 0 || pos.y > (snakeboardMaxY - DELTA)))
         continue;
 
       // drop random food at random positions in snake, ca. 16,67% probability to drop for each
@@ -496,8 +502,9 @@
     snake = [];
 
     // show retry button and game over message
-    document.getElementById('status').style.visibility = 'visible';
-    document.getElementById('status').innerHTML = '<b><span style=\"color: tomato; display: inline;\"> Game Over!</span></b>';
+    //document.getElementById('status').style.visibility = 'visible';
+    //document.getElementById('status').innerHTML = '<b><span style=\"color: tomato; display: inline;\"> Game Over!</span></b>';
+    sendInfo("Game Over!", 0, "Red");
 
     document.getElementById('score').style.visibility = 'visible';
     document.getElementById('score').innerHTML = 'Your score: ' + lastScore + '<button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
@@ -534,10 +541,10 @@
     if (changingDirection) return;
     changingDirection = true;
     const keyPressed = event.keyCode;
-    const goingUp = deltaY === -10;
-    const goingDown = deltaY === 10;
-    const goingRight = deltaX === 10;
-    const goingLeft = deltaX === -10;
+    const goingUp = deltaY === -DELTA;
+    const goingDown = deltaY === DELTA;
+    const goingRight = deltaX === DELTA;
+    const goingLeft = deltaX === -DELTA;
 
     // change direction based on pressed key
     changeDirection(((keyPressed === UP_KEY || keyPressed === W_KEY) && !goingDown),
@@ -567,10 +574,10 @@
     // Prevent the snake from reversing
     if (changingDirection) return;
     changingDirection = true;
-    const goingUp = deltaY === -10;
-    const goingDown = deltaY === 10;
-    const goingRight = deltaX === 10;
-    const goingLeft = deltaX === -10;
+    const goingUp = deltaY === -DELTA;
+    const goingDown = deltaY === DELTA;
+    const goingRight = deltaX === DELTA;
+    const goingLeft = deltaX === -DELTA;
 
     // is the upper part of the canvas pressed and aren't we going down?
     const upPressed = (((snakeboardMaxY / 2) > y) && !((snakeboardMaxX / 4) > x) && !((snakeboardMaxX - (snakeboardMaxX / 4)) < x)) && !goingDown;
@@ -608,8 +615,8 @@
   // resize the snakeboard, based on the size of the window
   function resizeSnakeboard() {
     // calculate the max width and height
-    var width50Percent = 7 * window.innerWidth / 8;
-    var height75Percent = 3 * window.innerHeight / 4;
+    var width50Percent = 1.5 * window.innerWidth * 0.5;
+    var height75Percent = 1.5 * window.innerHeight * 0.75;
 
     // calculate aspect ratio
     var aspectRatio = snakeboardMaxX / snakeboardMaxY;
@@ -663,9 +670,9 @@
     snakeboardCtx.strokestyle = "black";
     // Draw a "filled" rectangle to represent the snake part at the coordinates
     // the part is located
-    snakeboardCtx.fillRect(snakePart.x, snakePart.y, 10, 10);
+    snakeboardCtx.fillRect(snakePart.x, snakePart.y, DELTA, DELTA);
     // Draw a border around the snake part
-    snakeboardCtx.strokeRect(snakePart.x, snakePart.y, 10, 10);
+    snakeboardCtx.strokeRect(snakePart.x, snakePart.y, DELTA, DELTA);
   }
 
   // draw the food
@@ -676,8 +683,8 @@
 
       snakeboardCtx.fillStyle = currentFoodLightness(getFoodColorByLevel(food.level));
       snakeboardCtx.strokestyle = 'black';
-      snakeboardCtx.fillRect(food.x, food.y, 10, 10);
-      snakeboardCtx.strokeRect(food.x, food.y, 10, 10);
+      snakeboardCtx.fillRect(food.x, food.y, DELTA, DELTA);
+      snakeboardCtx.strokeRect(food.x, food.y, DELTA, DELTA);
     }
 
     // increase lightness
@@ -716,7 +723,7 @@
       var snakeData = allSnakes[playerName];
 
       // add the data as html to the score string
-      formattedScore += "<span id=\"scoreboard\" style=\"color:" + snakeData["color"] + ";text-shadow: 1px 0 black, -1px 0 black, 0 1px black, 0 -1px black, 1px 1px black, -1px -1px black, -1px 1px black, 1px -1px black;\">"
+      formattedScore += "<span id=\"scoreboard\" style=\"color:" + snakeData["color"] + ";\">"
       + htmlEntities(playerName) + "</span>: " + (score < -4 ? "Spectator" : score) + "<br>";
     }
 
@@ -725,18 +732,19 @@
   }
 
   // send an info to the status display
-  function sendInfo(str, duration, color) {
-    color = color || "Black";
-
+  function sendInfo(str, duration=0, color="Black") {
     // show
-    document.getElementById('status').style.visibility = 'visible';
+    //document.getElementById('status').style.visibility = 'visible';
     // set text
-    document.getElementById('status').innerHTML = '<div style="color:' + color + ';">' + str + '</div>';
-    setTimeout(() => {
-      // hide, if the innerHTML is still the given string and color
-      if (document.getElementById('status').innerHTML === '<div style="color:' + color + ';">' + str + '</div>')
-        document.getElementById('status').innerHTML = '<div style="color: transparent;">42</div';
-    }, duration);
+    var content = '<div id="innerStatus" style="color: ' + color + ';">' + str + '</div>';
+    document.getElementById('status').innerHTML = content;
+    if (duration > 0) {
+      setTimeout(() => {
+        // hide, if the innerHTML is still the given string and color
+        if (document.getElementById('status').innerHTML === content)
+        document.getElementById('status').innerHTML = '<div id="innerStatus" style="color: transparent;">42</div';
+      }, duration);
+    }
   }
 
 
@@ -912,12 +920,12 @@
   // get random coordinate for x on the board, min is the minimum distance to the wall from left
   function randomCoordinateX(min) {
     min = min || 0;
-    return Math.round(randomInt(min * 10, snakeboardMaxX - 10) / 10) * 10;
+    return Math.round(randomInt(min * DELTA, snakeboardMaxX - DELTA) / DELTA) * DELTA;
   }
 
   // get random coordinate for y on the board
   function randomCoordinateY() {
-    return Math.round(randomInt(0, snakeboardMaxY - 10) / 10) * 10;
+    return Math.round(randomInt(0, snakeboardMaxY - DELTA) / DELTA) * DELTA;
   }
 
   // get the length of an iterable object
@@ -1063,6 +1071,9 @@
 
 
   function main() {
+    // first resize manually
+    onResizeWindow();
+
     alert("We use cookies. By using this site, you agree with it.\n"
       + "\n"
       + "We use the Realtime Database of Google Firebase, to serve multiplayer. If you want to know how Google proceeds your data, look on their page: https://firebase.google.com/support/privacy/\n"
@@ -1102,7 +1113,7 @@
                 }
             }, false);
 
-    // first resize manually
+    // second resize manually
     onResizeWindow();
 
     setFireBaseListeners();
@@ -1143,7 +1154,7 @@
     firebase.database().ref("snake/players/" + name + "/color").set(my_snake_col);
 
     // handle food, if this is the first player
-    if (getOnlinePlayers() <= 1 && foods.length == 0)
+    if (foods.length == 0)
       addFood(randomCoordinateX(), randomCoordinateY(), randomFoodLevel());
 
     // first reset the last graphics update time
