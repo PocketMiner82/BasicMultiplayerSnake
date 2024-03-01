@@ -10,10 +10,10 @@
   const SNAKE_UPDATE_DELAY = 100;
 
   // the food levels
-  const FOOD_LEVEL_LESS = 0;
-  const FOOD_LEVEL_MEDIUM = 1;
-  const FOOD_LEVEL_MUCH = 2;
-  const FOOD_LEVEL_RANDOM = 3;
+  const FOOD_LEVEL_RANDOM = 0;
+  const FOOD_LEVEL_LESS = 1;
+  const FOOD_LEVEL_MEDIUM = 2;
+  const FOOD_LEVEL_MUCH = 3;
 
   // the food colors for the levels
   const FOOD_LEVEL_LESS_COLOR = 175;
@@ -895,16 +895,10 @@
 
   // convert the food level count to the count of the parts that must be added/removed
   function foodLevelToCount(level) {
-    switch (level) {
-      case FOOD_LEVEL_LESS:
-      case FOOD_LEVEL_MEDIUM:
-      case FOOD_LEVEL_MUCH:
-        return level + 1;
-      case FOOD_LEVEL_RANDOM:
-        return randomInt(-5, 5);
-      default:
-        return 0;
+    if (level == 0) {
+      return randomInt(-10, 10);
     }
+    return level;
   }
 
   // escape html specific characters (like < or >)
