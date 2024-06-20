@@ -661,24 +661,49 @@
     if (snake.length == 0) return;
 
     // Draw each part
-    var first = true;
+    var head = true;
     snake.forEach(part => {
-      drawSnakePart(my_snake_col, part, first);
-      first = false;
+      drawSnakePart(my_snake_col, part, head);
+      head = false;
     })
   }
 
   // Draw one snake part
-  function drawSnakePart(snake_col, snakePart, first) {
+  function drawSnakePart(snake_col, snakePart, head) {
     // Set the color of the snake part
     snakeboardCtx.fillStyle = snake_col;
     // Set the border color of the snake part
     snakeboardCtx.strokestyle = "black";
+
     // Draw a "filled" rectangle to represent the snake part at the coordinates
     // the part is located
     snakeboardCtx.fillRect(snakePart.x, snakePart.y, DELTA, DELTA);
     // Draw a border around the snake part
     snakeboardCtx.strokeRect(snakePart.x, snakePart.y, DELTA, DELTA);
+
+    if (head) {
+      snakeboardCtx.fillStyle = snake_col === "black" ? "white" : "black";
+      snakeboardCtx.beginPath();
+      if (deltaX > 0) { // Moving right
+          snakeboardCtx.moveTo(snakePart.x + DELTA - 1, snakePart.y + DELTA / 2);
+          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.75 - 1, snakePart.y);
+          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.75 - 1, snakePart.y + DELTA);
+      } else if (deltaX < 0) { // Moving left
+          snakeboardCtx.moveTo(snakePart.x + 1, snakePart.y + DELTA / 2);
+          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.25 + 1, snakePart.y);
+          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.25 + 1, snakePart.y + DELTA);
+      } else if (deltaY > 0) { // Moving down
+          snakeboardCtx.moveTo(snakePart.x + DELTA / 2, snakePart.y + DELTA - 1);
+          snakeboardCtx.lineTo(snakePart.x, snakePart.y + DELTA * 0.75 - 1);
+          snakeboardCtx.lineTo(snakePart.x + DELTA, snakePart.y + DELTA * 0.75 - 1);
+      } else if (deltaY < 0) { // Moving up
+          snakeboardCtx.moveTo(snakePart.x + DELTA / 2, snakePart.y + 1);
+          snakeboardCtx.lineTo(snakePart.x, snakePart.y + DELTA * 0.25 + 1);
+          snakeboardCtx.lineTo(snakePart.x + DELTA, snakePart.y + DELTA * 0.25 + 1);
+      }
+      snakeboardCtx.closePath();
+      snakeboardCtx.fill();
+    }
   }
 
   // draw the food
@@ -982,8 +1007,12 @@
 
       if (otherSnake == null || otherSnake["pos"] == null) continue;
 
-       // update each parts
-      otherSnake["pos"].forEach(part => drawSnakePart(otherSnake["color"] == null ? "red" : otherSnake["color"], part));
+      var head = true;
+      // update each parts
+      otherSnake["pos"].forEach(part => {
+        drawSnakePart(otherSnake["color"] == null ? "red" : otherSnake["color"], part, head);
+        head = false;
+      });
     }
   }
 
