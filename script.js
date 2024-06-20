@@ -19,6 +19,7 @@
   const FOOD_LEVEL_LESS_COLOR = 175;
   const FOOD_LEVEL_MEDIUM_COLOR = 110;
   const FOOD_LEVEL_MUCH_COLOR = 0;
+  const FOOD_LEVEL_RANDOM_COLOR = -1;
 
   // max player count (currently, set to the amount of colors, available)
   const MAX_PLAYERS = COLORS.length;
@@ -215,17 +216,27 @@
       // set the last update time to now
       timeLastGraphicsUpdate = Date.now();
     }
-    setTimeout(loop, 1);
-  }
 
-  // tick the game
-  function tick() {
     updateSideBar();
 
     clearBoard();
     drawFoods();
     handleOtherSnakes();
 
+    // we always need to draw the snake, so if it's there, it will be shown
+    drawSnake();
+
+    // retry button clicked
+    if (retryClicked) {
+      retryClicked = false;
+      onRetry();
+    }
+
+    setTimeout(loop, 1);
+  }
+
+  // tick the game
+  function tick() {
     if (countdown != 0) {
       // wait for countdown finsih
     } else if (isGameEnded || snake.length <= 0 || checkForCollision()) {
@@ -236,15 +247,6 @@
       // we are still in
       // move the snake (change values in array, and handle key presses)
       move_snake();
-    }
-
-    // we always need to draw the snake, so if it's there, it will be shown
-    drawSnake();
-
-    // retry button clicked
-    if (retryClicked) {
-      retryClicked = false;
-      onRetry();
     }
   }
 
@@ -659,11 +661,15 @@
     if (snake.length == 0) return;
 
     // Draw each part
-    snake.forEach(part => drawSnakePart(my_snake_col, part))
+    var first = true;
+    snake.forEach(part => {
+      drawSnakePart(my_snake_col, part, first);
+      first = false;
+    })
   }
 
   // Draw one snake part
-  function drawSnakePart(snake_col, snakePart) {
+  function drawSnakePart(snake_col, snakePart, first) {
     // Set the color of the snake part
     snakeboardCtx.fillStyle = snake_col;
     // Set the border color of the snake part
@@ -839,15 +845,15 @@
 
   // get the current food color with the blink effect
   function currentFoodLightness(foodColor) {
-    // color is max hexa decimal
+    // prevent lightness from being to big
     if (foodLightness == 50) {
       foodLightness = -50;
     }
 
     var hsv = {
-      h: foodColor,
+      h: foodColor == FOOD_LEVEL_RANDOM_COLOR ? ((foodLightness + 50) / 99) * 360 : foodColor,
       s: 100,
-      v: (foodLightness < 0 ? (foodLightness * -1) : foodLightness) + 50,
+      v: foodColor == FOOD_LEVEL_RANDOM_COLOR ? 100 : Math.abs(foodLightness) + 50,
     };
     var color = Color( hsv );
 
@@ -864,7 +870,7 @@
       case FOOD_LEVEL_MUCH:
         return FOOD_LEVEL_MUCH_COLOR;
       case FOOD_LEVEL_RANDOM:
-        return randomInt(0, 30) * 10;
+        return FOOD_LEVEL_RANDOM_COLOR;
       default:
         return 0;
     }
