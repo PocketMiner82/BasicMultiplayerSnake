@@ -108,6 +108,9 @@
   var snakeboardCalculatedWidth;
   var snakeboardCalculatedHeight;
 
+  // the last update we received from the db (to check if other player is lagging or we are)
+  var lastOwnDBUpdate = Math.round(Date.now() / 1000);
+
   // the web app's Firebase configuration
   var firebaseConfig = {
     apiKey: "AIzaSyBbRpK_BcltEmRQzLAUCFykMHEq5PQWWz4",
@@ -215,6 +218,25 @@
 
       // set the last update time to now
       timeLastGraphicsUpdate = Date.now();
+
+      // send last update time to DB so that other players know if this player is still active
+      setLastUpdate(timeLastGraphicsUpdate);
+
+      console.log(Math.round(Date.now() / 1000) - lastOwnDBUpdate);
+
+      // only run if we are not behind the db ourself
+      if (Math.round(Date.now() / 1000) - lastOwnDBUpdate < 10) {
+        // check if all other players are actually still active. If not, we delete the entries from the DB.
+        for (var playerName in otherSnakes) {
+          var otherSnake = otherSnakes[playerName];
+
+          // inactive for 15 seconds
+          if (Math.round(Date.now() / 1000) - parseInt(otherSnake.lastUpdate) > 15) {
+            // delete the entry
+            firebase.database().ref("snake/players/" + playerName).remove();
+          }
+        }
+      }
     }
 
     updateSideBar();
@@ -1037,6 +1059,14 @@
     firebase.database().ref("snake/players/" + name + "/pos").set(snakeData);
   }
 
+  // save our playerdata to database
+  function setLastUpdate() {
+    // only update every second
+    let sec = Math.round(Date.now() / 1000);
+
+    firebase.database().ref("snake/players/" + name + "/lastUpdate").set(sec);
+  }
+
   // save the foods data to database
   function updateFoods() {
     firebase.database().ref("snake/foods").set(foods);
@@ -1076,6 +1106,7 @@
         if (playerName == name) {
           // update our own color
           my_snake_col = data[playerName]["color"];
+          lastOwnDBUpdate = data[playerName]["lastUpdate"];
           continue;
         }
         newArray[playerName] = data[playerName];
