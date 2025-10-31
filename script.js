@@ -109,7 +109,7 @@
   var snakeboardCalculatedHeight;
 
   // the last update we received from the db (to check if other player is lagging or we are)
-  var lastOwnDBUpdate = Math.round(Date.now() / 1000);
+  var lastOwnDBUpdate = -1;
 
   // the web app's Firebase configuration
   var firebaseConfig = {
@@ -121,6 +121,12 @@
     messagingSenderId: "556381649934",
     appId: "1:556381649934:web:af27169882d8297d78d05f"
   };
+
+  // main connection to the firebase database
+  var firebaseMain;
+
+  // used to check if other player or ourself is lagging
+  var firebaseOnlineChecker;
 
 
 
@@ -222,19 +228,21 @@
       // send last update time to DB so that other players know if this player is still active
       setLastUpdate(timeLastGraphicsUpdate);
 
-      console.log(Math.round(Date.now() / 1000) - lastOwnDBUpdate);
-
       // only run if we are not behind the db ourself
-      if (Math.round(Date.now() / 1000) - lastOwnDBUpdate < 10) {
+      if (Math.round(Date.now() / 1000) - lastOwnDBUpdate < 5) {
         // check if all other players are actually still active. If not, we delete the entries from the DB.
         for (var playerName in otherSnakes) {
           var otherSnake = otherSnakes[playerName];
 
-          // inactive for 15 seconds
-          if (Math.round(Date.now() / 1000) - parseInt(otherSnake.lastUpdate) > 15) {
+          // inactive for 10 seconds
+          if (Math.round(Date.now() / 1000) - parseInt(otherSnake.lastUpdate) > 10) {
             // delete the entry
-            firebase.database().ref("snake/players/" + playerName).remove();
+            firebaseMain.ref("snake/players/" + playerName).remove();
           }
+        }
+      } else {
+        while(true) {
+          alert("Connection lost. Once restored, please reload the page.");
         }
       }
     }
@@ -1056,7 +1064,7 @@
   // save our playerdata to database
   function setPlayerData(snakeData) {
     if (isInvisibleForOthers) snakeData = [];
-    firebase.database().ref("snake/players/" + name + "/pos").set(snakeData);
+    firebaseMain.ref("snake/players/" + name + "/pos").set(snakeData);
   }
 
   // save our playerdata to database
@@ -1064,36 +1072,36 @@
     // only update every second
     let sec = Math.round(Date.now() / 1000);
 
-    firebase.database().ref("snake/players/" + name + "/lastUpdate").set(sec);
+    firebaseMain.ref("snake/players/" + name + "/lastUpdate").set(sec);
   }
 
   // save the foods data to database
   function updateFoods() {
-    firebase.database().ref("snake/foods").set(foods);
+    firebaseMain.ref("snake/foods").set(foods);
   }
 
   // set the listeners for firebase
   function setFireBaseListeners() {
     // value of foods changed, update it
-    firebase.database().ref("snake/foods").on("value", (snapshot) => {
+    firebaseMain.ref("snake/foods").on("value", (snapshot) => {
       data = snapshot.val();
       foods = data == null ? [] : data;
     });
 
     // the food spawn type is forced by database
-    firebase.database().ref("snake/variables/forcedFoodLevel").on("value", (snapshot) => {
+    firebaseMain.ref("snake/variables/forcedFoodLevel").on("value", (snapshot) => {
       data = snapshot.val();
       forcedFoodLevel = data == null ? -1 : data;
     });
 
     // the food factor is changed
-    firebase.database().ref("snake/variables/foodFactor").on("value", (snapshot) => {
+    firebaseMain.ref("snake/variables/foodFactor").on("value", (snapshot) => {
       data = snapshot.val();
       foodFactor = data == null ? 1 : data;
     });
 
     // listen for other snake(s) changes
-    firebase.database().ref("snake/players").on("value", (snapshot) => {
+    firebaseMain.ref("snake/players").on("value", (snapshot) => {
       data = snapshot.val();
       if (data == null) {
         firstInitOtherSnakes = true;
@@ -1106,7 +1114,6 @@
         if (playerName == name) {
           // update our own color
           my_snake_col = data[playerName]["color"];
-          lastOwnDBUpdate = data[playerName]["lastUpdate"];
           continue;
         }
         newArray[playerName] = data[playerName];
@@ -1116,6 +1123,24 @@
       // used to count online (registered) players
       allSnakes = data;
       firstInitOtherSnakes = true;
+    });
+
+    // listen again, but this time for checking if time stamp sent via firebaseMain is
+    // received via firebaseOnlineChecker therfore checking if it is us that is lagging or another player
+    // listen for other snake(s) changes
+    firebaseOnlineChecker.ref("snake/players/" + name).on("value", (snapshot) => {
+      data = snapshot.val();
+      if (data == null) {
+        return;
+      }
+      for (var playerName in data) {
+        if (playerName == name) {
+          let newUpdate = data[playerName]["lastUpdate"];
+          // check when the database last registered input from us
+          lastOwnDBUpdate = newUpdate > 0 ? newUpdate : lastOwnDBUpdate;
+          break;
+        }
+      }
     });
   }
 
@@ -1141,10 +1166,14 @@
       + "If you don't want to agree, close this site. No data has been saved yet.");
 
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+    const app1 = firebase.initializeApp(firebaseConfig);
+    const app2 = firebase.initializeApp(firebaseConfig, "OnlineCheck");
+
+    firebaseMain = firebase.database(app1);
+    firebaseOnlineChecker = firebase.database(app2);
 
     // always get the version of db
-    firebase.database().ref("snake/variables/version").on("value", (snapshot) => {
+    firebaseMain.ref("snake/variables/version").on("value", (snapshot) => {
       data = snapshot.val();
       dbVersion = parseInt(data, 10);
 
@@ -1203,22 +1232,23 @@
     // name set successfully, we can run the game now  and we need to save the name
     // in a separate key to get access to write our data later, this will also restrict
     // the access to this entry only for us
-    firebase.database().ref("snake/players/" + name + "/verifyName").set(name);
+    firebaseMain.ref("snake/players/" + name + "/verifyName").set(name);
 
     // if player disconnect, remove data
-    firebase.database().ref("snake/players/" + name).onDisconnect().remove();
+    firebaseMain.ref("snake/players/" + name).onDisconnect().remove();
 
     // generate random color for us
     my_snake_col = getRandomColor();
 
-    firebase.database().ref("snake/players/" + name + "/color").set(my_snake_col);
+    firebaseMain.ref("snake/players/" + name + "/color").set(my_snake_col);
 
     // handle food, if this is the first player
     if (foods.length == 0)
       addFood(randomCoordinateX(), randomCoordinateY(), randomFoodLevel());
 
-    // first reset the last graphics update time
+    // first reset the last graphics update and db update time
     timeLastGraphicsUpdate = Date.now();
+    lastOwnDBUpdate = Math.round(Date.now() / 1000);
 
     // then start the main loop
     loop();
@@ -1244,7 +1274,7 @@
         continue;
       }
 
-      firebase.database().ref("snake/players/" + name + "/color").get().then((snapshot) => {
+      firebaseMain.ref("snake/players/" + name + "/color").get().then((snapshot) => {
         // the color value is set, so there must be a user, that has taken this name
         if (snapshot.exists()) {
           alert("Someone has already chosen this name.");
