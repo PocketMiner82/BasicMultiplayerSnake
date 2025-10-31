@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 16;
+  const VERSION = 17;
 
   const BOARD_BACKGROUND = "#555555";
 
