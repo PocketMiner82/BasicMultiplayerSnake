@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 17;
+  const VERSION = 18;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -82,6 +82,9 @@
 
   // the other players
   var otherSnakes = [];
+
+  // the last snake updates with timestamps from this browser, so a wrong browser time does not affect offline kicking
+  var otherSnakesLastUpdates = [];
 
   // used to count online (registered) players
   var allSnakes = [];
@@ -231,19 +234,17 @@
       // only run if we are not behind the db ourself
       if (Math.round(Date.now() / 1000) - lastOwnDBUpdate < 5) {
         // check if all other players are actually still active. If not, we delete the entries from the DB.
-        for (var playerName in otherSnakes) {
-          var otherSnake = otherSnakes[playerName];
-
+        for (var playerName in otherSnakesLastUpdates) {
           // inactive for 10 seconds
-          if (Math.round(Date.now() / 1000) - parseInt(otherSnake.lastUpdate) > 10) {
+          if (Math.round(Date.now() / 1000) - otherSnakesLastUpdates[playerName] > 10) {
             // delete the entry
             firebaseMain.ref("snake/players/" + playerName).remove();
           }
         }
       } else {
-        while(true) {
-          alert("Connection lost. Once restored, please reload the page.");
-        }
+        alert("Connection lost.");
+        location.reload();
+        return;
       }
     }
 
@@ -821,43 +822,46 @@
 
   // check if the version is equal to the version of the database
   function handleVersionCheck() {
-    do {
-        if (dbVersion > VERSION) {
-          versionChecked = true;
-          // clear our snake from db
-          snake = [];
-          setPlayerData([]);
+    if (dbVersion > VERSION) {
+      versionChecked = true;
+      // clear our snake from db
+      snake = [];
+      setPlayerData([]);
 
-          // we need to wait for the player data to be updated.
-          for (var playerName in allSnakes) {
-            otherSnake = snake[playerName];
-            if (playerName == name && !(otherSnake == null || getArrayLength(otherSnake) == 0)) return;
-          }
+      // we need to wait for the player data to be updated.
+      for (var playerName in allSnakes) {
+        otherSnake = snake[playerName];
+        if (playerName == name && !(otherSnake == null || getArrayLength(otherSnake) == 0)) return;
+      }
 
-          versionChecked = false;
-          // client outdated
-          alert("Client outdated. Please close the tab, delete all cookies and data from this page and reopen this page.\n"
-            + "The easiest way is to delete all your browsing data.");
-        } else if (dbVersion < VERSION) {
-          versionChecked = true;
-          // clear our snake from db
-          snake = [];
-          setPlayerData([]);
+      // client outdated
+      alert("Client outdated. Click OK to reload the page and try again.\n\n"
+          + "If reloading doesn't work after some waiting, try deleting all cookies and data from this page.");
 
-          // we need to wait for the player data to be updated.
-          for (var playerName in allSnakes) {
-            otherSnake = snake[playerName];
-            if (playerName == name && !(otherSnake == null || getArrayLength(otherSnake) == 0)) return;
-          }
+      try {
+        location.reload(true);
+      } catch {
+        location.reload();
+      }
+    } else if (dbVersion < VERSION) {
+      versionChecked = true;
+      // clear our snake from db
+      snake = [];
+      setPlayerData([]);
 
-          versionChecked = false;
-          // db outdated
-          alert("Database outdated. Please wait for the database to update, then reopen this tab.");
-        } else {
-          // everything up-to-date
-          versionChecked = true;
-        }
-    } while (!versionChecked);
+      // we need to wait for the player data to be updated.
+      for (var playerName in allSnakes) {
+        otherSnake = snake[playerName];
+        if (playerName == name && !(otherSnake == null || getArrayLength(otherSnake) == 0)) return;
+      }
+
+      // db outdated
+      alert("Database outdated. Please wait for the database to update.");
+      location.reload();
+    } else {
+      // everything up-to-date
+      versionChecked = true;
+    }
   }
 
   // get random color for our snake, that isn't used
@@ -1117,6 +1121,11 @@
           continue;
         }
         newArray[playerName] = data[playerName];
+
+        // check if the other snake updated since last run
+        if (otherSnakes[playerName] && newArray[playerName]["lastUpdate"] != otherSnakes[playerName]["lastUpdate"]) {
+          otherSnakesLastUpdates[playerName] = Math.round(Date.now() / 1000);
+        }
       }
 
       otherSnakes = newArray;
