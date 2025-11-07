@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 19;
+  const VERSION = 20;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -23,6 +23,12 @@
 
   // max player count (currently, set to the amount of colors, available)
   const MAX_PLAYERS = COLORS.length;
+
+  // the meaning of the headDir field in the snake object
+  const HEAD_DIR_UP = 0;
+  const HEAD_DIR_LEFT = 1;
+  const HEAD_DIR_DOWN = 2;
+  const HEAD_DIR_RIGHT = 3;
 
   // Get the canvas element
   const snakeboard = document.getElementById("snakeboard");
@@ -57,7 +63,10 @@
   var isInvisibleForOthers = true;
 
   // our snake color
-  var my_snake_col;
+  var mySnakeCol;
+
+  // in which direction our head is facing
+  var myHeadDir = HEAD_DIR_RIGHT;
 
   // the player name
   var name = "";
@@ -159,6 +168,9 @@
     // reset game isn't ended
     isGameEnded = false;
 
+    // reset go direction
+    changeDirection(false, false, false, true);
+
     // start the countdown
     startCountdown();
   }
@@ -187,10 +199,6 @@
         setTimeout(startCountdown, 50);
         return;
       }
-
-      // reset go direction
-      deltaX = DELTA;
-      deltaY = 0;
 
       // countdown is finished, we don't need to wait
       countdown = 0;
@@ -263,7 +271,7 @@
       onRetry();
     }
 
-    setTimeout(loop, 1);
+    setTimeout(loop, 5);
   }
 
   // tick the game
@@ -348,18 +356,22 @@
   function changeDirection(up, left, down, right) {
     // going up
     if (up) {
+      myHeadDir = HEAD_DIR_UP;
       deltaX = 0;
       deltaY = -DELTA;
     // going left
     } else if (left) {
+      myHeadDir = HEAD_DIR_LEFT;
       deltaX = -DELTA;
       deltaY = 0;
     // going down
     } else if (down) {
+      myHeadDir = HEAD_DIR_DOWN;
       deltaX = 0;
       deltaY = DELTA;
     // going right
     } else if (right) {
+      myHeadDir = HEAD_DIR_RIGHT;
       deltaX = DELTA;
       deltaY = 0;
     }
@@ -692,15 +704,15 @@
     if (snake.length == 0) return;
 
     // Draw each part
-    var head = true;
+    var headDir = myHeadDir;
     snake.forEach(part => {
-      drawSnakePart(my_snake_col, part, head);
-      head = false;
+      drawSnakePart(mySnakeCol, part, headDir);
+      headDir = undefined;
     })
   }
 
   // Draw one snake part
-  function drawSnakePart(snake_col, snakePart, head) {
+  function drawSnakePart(snake_col, snakePart, headDir) {
     // Set the color of the snake part
     snakeboardCtx.fillStyle = snake_col;
     // Set the border color of the snake part
@@ -712,26 +724,39 @@
     // Draw a border around the snake part
     snakeboardCtx.strokeRect(snakePart.x, snakePart.y, DELTA, DELTA);
 
-    if (head) {
-      snakeboardCtx.fillStyle = snake_col === "black" ? "white" : "black";
+    if (headDir != undefined) {
+      snakeboardCtx.fillStyle = snake_col.toLowerCase() === "black" ? "white" : "black";
       snakeboardCtx.beginPath();
-      if (deltaX > 0) { // Moving right
-          snakeboardCtx.moveTo(snakePart.x + DELTA - 1, snakePart.y + DELTA / 2);
-          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.75 - 1, snakePart.y);
-          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.75 - 1, snakePart.y + DELTA);
-      } else if (deltaX < 0) { // Moving left
-          snakeboardCtx.moveTo(snakePart.x + 1, snakePart.y + DELTA / 2);
-          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.25 + 1, snakePart.y);
-          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.25 + 1, snakePart.y + DELTA);
-      } else if (deltaY > 0) { // Moving down
-          snakeboardCtx.moveTo(snakePart.x + DELTA / 2, snakePart.y + DELTA - 1);
-          snakeboardCtx.lineTo(snakePart.x, snakePart.y + DELTA * 0.75 - 1);
-          snakeboardCtx.lineTo(snakePart.x + DELTA, snakePart.y + DELTA * 0.75 - 1);
-      } else if (deltaY < 0) { // Moving up
+
+      switch (headDir) {
+        case HEAD_DIR_UP:
           snakeboardCtx.moveTo(snakePart.x + DELTA / 2, snakePart.y + 1);
           snakeboardCtx.lineTo(snakePart.x, snakePart.y + DELTA * 0.25 + 1);
           snakeboardCtx.lineTo(snakePart.x + DELTA, snakePart.y + DELTA * 0.25 + 1);
+          break;
+
+        case HEAD_DIR_LEFT:
+          snakeboardCtx.moveTo(snakePart.x + 1, snakePart.y + DELTA / 2);
+          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.25 + 1, snakePart.y);
+          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.25 + 1, snakePart.y + DELTA);
+          break;
+        
+        case HEAD_DIR_DOWN:
+          snakeboardCtx.moveTo(snakePart.x + DELTA / 2, snakePart.y + DELTA - 1);
+          snakeboardCtx.lineTo(snakePart.x, snakePart.y + DELTA * 0.75 - 1);
+          snakeboardCtx.lineTo(snakePart.x + DELTA, snakePart.y + DELTA * 0.75 - 1);
+          break;
+
+        case HEAD_DIR_RIGHT:
+          snakeboardCtx.moveTo(snakePart.x + DELTA - 1, snakePart.y + DELTA / 2);
+          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.75 - 1, snakePart.y);
+          snakeboardCtx.lineTo(snakePart.x + DELTA * 0.75 - 1, snakePart.y + DELTA);
+          break;
+      
+        default:
+          break;
       }
+
       snakeboardCtx.closePath();
       snakeboardCtx.fill();
     }
@@ -836,7 +861,7 @@
 
       // client outdated
       alert("Client outdated. Click OK to reload the page and try again.\n\n"
-          + "If reloading doesn't work after some waiting, try deleting all cookies and data from this page.");
+          + "If reloading doesn't work after some waiting, try pressing CTRL+SHIFT+R or delete all cookies and data from this page.");
 
       try {
         location.reload(true);
@@ -905,12 +930,12 @@
   // get the current food color with the blink effect
   function currentFoodLightness(foodColor) {
     // prevent lightness from being to big
-    if (foodLightness == 50) {
+    if (foodLightness > 50) {
       foodLightness = -50;
     }
 
     var hsv = {
-      h: foodColor == FOOD_LEVEL_RANDOM_COLOR ? ((foodLightness + 50) / 99) * 360 : foodColor,
+      h: foodColor == FOOD_LEVEL_RANDOM_COLOR ? ((foodLightness + 50) / 100) * 360 : foodColor,
       s: 100,
       v: foodColor == FOOD_LEVEL_RANDOM_COLOR ? 100 : Math.abs(foodLightness) + 50,
     };
@@ -961,7 +986,7 @@
   // convert the food level count to the count of the parts that must be added/removed
   function foodLevelToCount(level) {
     if (level == 0) {
-      return randomInt(-10, 10);
+      return randomInt(-5, 10);
     }
     return level;
   }
@@ -1041,11 +1066,11 @@
 
       if (otherSnake == null || otherSnake["pos"] == null) continue;
 
-      var head = true;
+      var headDir = otherSnake["headDir"];
       // update each parts
       otherSnake["pos"].forEach(part => {
-        drawSnakePart(otherSnake["color"] == null ? "red" : otherSnake["color"], part, head);
-        head = false;
+        drawSnakePart(otherSnake["color"] == null ? "red" : otherSnake["color"], part, headDir);
+        headDir = undefined;
       });
     }
   }
@@ -1069,6 +1094,7 @@
   function setPlayerData(snakeData) {
     if (isInvisibleForOthers) snakeData = [];
     firebaseMain.ref("snake/players/" + name + "/pos").set(snakeData);
+    firebaseMain.ref("snake/players/" + name + "/headDir").set(myHeadDir);
   }
 
   // save our playerdata to database
@@ -1117,7 +1143,7 @@
       for (var playerName in data) {
         if (playerName == name) {
           // update our own color
-          my_snake_col = data[playerName]["color"];
+          mySnakeCol = data[playerName]["color"];
           continue;
         }
         newArray[playerName] = data[playerName];
@@ -1247,9 +1273,9 @@
     firebaseMain.ref("snake/players/" + name).onDisconnect().remove();
 
     // generate random color for us
-    my_snake_col = getRandomColor();
+    mySnakeCol = getRandomColor();
 
-    firebaseMain.ref("snake/players/" + name + "/color").set(my_snake_col);
+    firebaseMain.ref("snake/players/" + name + "/color").set(mySnakeCol);
 
     // handle food, if this is the first player
     if (foods.length == 0)
