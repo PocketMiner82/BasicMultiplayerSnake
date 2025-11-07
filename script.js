@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 18;
+  const VERSION = 19;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -34,7 +34,7 @@
   const snakeboardMaxY = 720;
 
   // the default snake move delta and snake square size
-  const DELTA = 16;
+  const DELTA = 20;
 
 
   // is the version checking finished?
