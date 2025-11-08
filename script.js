@@ -25,6 +25,7 @@
   const MAX_PLAYERS = COLORS.length;
 
   // the meaning of the headDir field in the snake object
+  const HEAD_DIR_NO_CHANGE = -1;
   const HEAD_DIR_UP = 0;
   const HEAD_DIR_LEFT = 1;
   const HEAD_DIR_DOWN = 2;
@@ -68,6 +69,12 @@
   // in which direction our head is facing
   var myHeadDir = HEAD_DIR_RIGHT;
 
+  // the head dir that will be applied at the next move
+  var requestedHeadDir = HEAD_DIR_NO_CHANGE;
+
+  // the head dir that will be applied at the next next move, used to cache input to make input smoother
+  var requestedNextHeadDir = HEAD_DIR_NO_CHANGE;
+
   // the player name
   var name = "";
 
@@ -79,9 +86,6 @@
 
   // the last score we had, to display it after death in title
   var lastScore = 0;
-
-  // are we changing direction?
-  var changingDirection = false;
 
   // horizontal snake move delta
   var deltaX = DELTA;
@@ -169,7 +173,7 @@
     isGameEnded = false;
 
     // reset go direction
-    changeDirection(false, false, false, true);
+    changeDir(true, HEAD_DIR_RIGHT);
 
     // start the countdown
     startCountdown();
@@ -226,7 +230,6 @@
 
       for (var i = 0; i < loopCount; i++) {
         // tick the game
-        changingDirection = false;
         tick();
       }
 
@@ -350,31 +353,82 @@
     } else {
       tailWaitCount--;
     }
+
+    requestedHeadDir = requestedNextHeadDir;
+    requestedNextHeadDir = HEAD_DIR_NO_CHANGE;
+    changeDir(false);
   }
 
   // change the "walking" direction of the snake
-  function changeDirection(up, left, down, right) {
+  function userChangeDirection(up, left, down, right) {
+    var newHeadDir;
+
     // going up
     if (up) {
-      myHeadDir = HEAD_DIR_UP;
-      deltaX = 0;
-      deltaY = -DELTA;
+      newHeadDir = HEAD_DIR_UP;
     // going left
     } else if (left) {
-      myHeadDir = HEAD_DIR_LEFT;
-      deltaX = -DELTA;
-      deltaY = 0;
+      newHeadDir = HEAD_DIR_LEFT;
     // going down
     } else if (down) {
-      myHeadDir = HEAD_DIR_DOWN;
-      deltaX = 0;
-      deltaY = DELTA;
+      newHeadDir = HEAD_DIR_DOWN;
     // going right
     } else if (right) {
-      myHeadDir = HEAD_DIR_RIGHT;
-      deltaX = DELTA;
-      deltaY = 0;
+      newHeadDir = HEAD_DIR_RIGHT;
     }
+
+    console.log(newHeadDir);
+
+    changeDir(false, newHeadDir);
+  }
+
+  function changeDir(force, newHeadDir = HEAD_DIR_NO_CHANGE) {
+    // if game is not started yet
+    if (countdown != 0) {
+      force = true;
+    }
+
+    if (!force && newHeadDir != HEAD_DIR_NO_CHANGE) {
+      // save the requested input. if there already is one saved, save also one future requested input to make input smoother
+      if (requestedHeadDir == HEAD_DIR_NO_CHANGE) {
+        requestedHeadDir = newHeadDir;
+      } else {
+        requestedNextHeadDir = newHeadDir;
+      }
+      newHeadDir = requestedHeadDir;
+    } else if (force) {
+      requestedHeadDir = HEAD_DIR_NO_CHANGE;
+      requestedNextHeadDir = HEAD_DIR_NO_CHANGE;
+    } else {
+      newHeadDir = requestedHeadDir;
+    }
+
+    switch (newHeadDir) {
+      case HEAD_DIR_UP:
+        deltaX = 0;
+        deltaY = -DELTA;
+        break;
+
+      case HEAD_DIR_LEFT:
+        deltaX = -DELTA;
+        deltaY = 0;
+        break;
+
+      case HEAD_DIR_DOWN:
+        deltaX = 0;
+        deltaY = DELTA;
+        break;
+
+      case HEAD_DIR_RIGHT:
+        deltaX = DELTA;
+        deltaY = 0;
+        break;
+
+      default:
+        break;
+    }
+
+    myHeadDir = newHeadDir == HEAD_DIR_NO_CHANGE ? myHeadDir : newHeadDir;
   }
 
   // check for collission with wall, other snakes, oneself
@@ -582,9 +636,6 @@
     const ENTER_KEY = 13;
     const R_KEY = 82;
 
-    // Prevent the snake from reversing
-    if (changingDirection) return;
-    changingDirection = true;
     const keyPressed = event.keyCode;
     const goingUp = deltaY === -DELTA;
     const goingDown = deltaY === DELTA;
@@ -592,7 +643,7 @@
     const goingLeft = deltaX === -DELTA;
 
     // change direction based on pressed key
-    changeDirection(((keyPressed === UP_KEY || keyPressed === W_KEY) && !goingDown),
+    userChangeDirection(((keyPressed === UP_KEY || keyPressed === W_KEY) && !goingDown),
       ((keyPressed === LEFT_KEY || keyPressed === A_KEY) && !goingRight),
       ((keyPressed === DOWN_KEY || keyPressed === S_KEY) && !goingUp),
       ((keyPressed === RIGHT_KEY || keyPressed === D_KEY) && !goingLeft));
@@ -616,9 +667,6 @@
     const x = (e.touches[0].clientX - rect.left) / scaleX;
     const y = (e.touches[0].clientY - rect.top) / scaleY;
 
-    // Prevent the snake from reversing
-    if (changingDirection) return;
-    changingDirection = true;
     const goingUp = deltaY === -DELTA;
     const goingDown = deltaY === DELTA;
     const goingRight = deltaX === DELTA;
@@ -634,7 +682,7 @@
     const rightPressed = ((snakeboardMaxX - (snakeboardMaxX / 4)) < x) && !goingLeft;
 
     // change direction based on the values
-    changeDirection(upPressed, leftPressed, downPressed, rightPressed);
+    userChangeDirection(upPressed, leftPressed, downPressed, rightPressed);
   }
 
   // called when the retry button is clicked
