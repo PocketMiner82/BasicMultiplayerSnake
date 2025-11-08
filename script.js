@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 22;
+  const VERSION = 23;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -708,27 +708,28 @@
   // resize the snakeboard, based on the size of the window
   function resizeSnakeboard() {
     // calculate the max width and height
-    var width50Percent = 1.5 * window.innerWidth * 0.5;
-    var height75Percent = 1.5 * window.innerHeight * 0.75;
+    var widthMax = window.innerWidth * 0.8 - 32;
+    var heightMax = window.innerHeight * 0.86 - 16;
+    
 
     // calculate aspect ratio
     var aspectRatio = snakeboardMaxX / snakeboardMaxY;
 
     // only allow the smallest width, to be full size
-    var widthMax = snakeboardMaxX / width50Percent;
-    var heightMax = snakeboardMaxY / height75Percent;
+    var widthFactorMax = snakeboardMaxX / widthMax;
+    var heightFactorMax = snakeboardMaxY / heightMax;
 
     // the other size (which is too big to fit on the monitor) will shrink,
     // but it will also consider the aspect ratio
-    if (widthMax > heightMax) {
-      snakeboardCalculatedWidth = width50Percent;
-      snakeboardCalculatedHeight = width50Percent / aspectRatio;
-    } else if (heightMax > widthMax) {
-      snakeboardCalculatedWidth = height75Percent * aspectRatio;
-      snakeboardCalculatedHeight = height75Percent;
+    if (widthFactorMax > heightFactorMax) {
+      snakeboardCalculatedWidth = widthMax;
+      snakeboardCalculatedHeight = widthMax / aspectRatio;
+    } else if (heightFactorMax > widthFactorMax) {
+      snakeboardCalculatedWidth = heightMax * aspectRatio;
+      snakeboardCalculatedHeight = heightMax;
     } else {
-      snakeboardCalculatedWidth = width50Percent;
-      snakeboardCalculatedHeight = height75Percent;
+      snakeboardCalculatedWidth = widthMax;
+      snakeboardCalculatedHeight = heightMax;
     }
 
     // set the calculated width and height
