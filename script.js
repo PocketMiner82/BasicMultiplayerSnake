@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 21;
+  const VERSION = 22;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -896,16 +896,9 @@
   // check if the version is equal to the version of the database
   function handleVersionCheck() {
     if (dbVersion > VERSION) {
-      versionChecked = true;
       // clear our snake from db
       snake = [];
       setPlayerData([]);
-
-      // we need to wait for the player data to be updated.
-      for (var playerName in allSnakes) {
-        otherSnake = snake[playerName];
-        if (playerName == name && !(otherSnake == null || getArrayLength(otherSnake) == 0)) return;
-      }
 
       // client outdated
       alert("Client outdated. Click OK to reload the page and try again.\n\n"
@@ -917,24 +910,16 @@
         location.reload();
       }
     } else if (dbVersion < VERSION) {
-      versionChecked = true;
       // clear our snake from db
       snake = [];
       setPlayerData([]);
 
-      // we need to wait for the player data to be updated.
-      for (var playerName in allSnakes) {
-        otherSnake = snake[playerName];
-        if (playerName == name && !(otherSnake == null || getArrayLength(otherSnake) == 0)) return;
-      }
-
       // db outdated
       alert("Database outdated. Please wait for the database to update.");
       location.reload();
-    } else {
-      // everything up-to-date
-      versionChecked = true;
     }
+
+    versionChecked = true;
   }
 
   // get random color for our snake, that isn't used
