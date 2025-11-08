@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 23;
+  const VERSION = 24;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -1127,8 +1127,10 @@
   // save our playerdata to database
   function setPlayerData(snakeData) {
     if (isInvisibleForOthers) snakeData = [];
-    firebaseMain.ref("snake/players/" + name + "/pos").set(snakeData);
-    firebaseMain.ref("snake/players/" + name + "/headDir").set(myHeadDir);
+    if (name) {
+      firebaseMain.ref("snake/players/" + name + "/pos").set(snakeData);
+      firebaseMain.ref("snake/players/" + name + "/headDir").set(myHeadDir);
+    }
   }
 
   // save our playerdata to database
