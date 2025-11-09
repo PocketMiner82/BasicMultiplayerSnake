@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 26;
+  const VERSION = 27;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -1203,7 +1203,7 @@
         newArray[playerName] = data[playerName];
 
         // check if the other snake updated since last run
-        if (otherSnakes[playerName] && newArray[playerName]["lastUpdate"] != otherSnakes[playerName]["lastUpdate"]) {
+        if ((otherSnakes[playerName] && newArray[playerName]["lastUpdate"] != otherSnakes[playerName]["lastUpdate"]) || !otherSnakesLastUpdates[playerName]) {
           otherSnakesLastUpdates[playerName] = Math.round(Date.now() / 1000);
         }
       }
@@ -1352,10 +1352,10 @@
 
     // loop until user chose a name, that is not empty and not taken
     while (name == "") {
-      let tempName = prompt("Choose a player name:\n\n\".\", \"/\", \"#\", \"$\", \"[\", or \"]\" will be replaced by \"_\".");
+      let tempName = prompt("Choose a player name (max 16 characters):\n\nOnly alphanumeric and _ characters are allowed.");
       name = tempName == null ? "" : tempName;
 
-      name = name.replaceAll(".", "_").replaceAll("#", "_").replaceAll("$", "_").replaceAll("[", "_").replaceAll("]", "_").replaceAll("/", "_");
+      name = name.replaceAll(/[^a-zA-ZäöüÄÖÜßẞ0-9_]/g, "");
 
       if (name.length > 16) {
         alert("This name is too long.");
