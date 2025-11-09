@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 24;
+  const VERSION = 25;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -43,6 +43,9 @@
   // the default snake move delta and snake square size
   const DELTA = 20;
 
+  // the amount of ticks a snake will have spawn protection after game start
+  const SPAWN_PROTECTION_TICKS = 300 * 1000 / SNAKE_UPDATE_DELAY;
+
 
   // is the version checking finished?
   let versionChecked = false;
@@ -57,7 +60,10 @@
   let isGameEnded = false;
 
   // countdown before start
-  let countdown = 6;
+  let countdown = 4;
+
+  // the amount of ticks the snake still has spawn protection
+  let spawnProtectionRemainingTicks = SPAWN_PROTECTION_TICKS;
 
   // can we send data to database (we should be invisible for other players
   // in countdown sequence, but visible for ourself)
@@ -165,7 +171,10 @@
     // reset the last graphics update time to now
     timeLastGraphicsUpdate = Date.now();
     // reset countdown
-    countdown = 6;
+    countdown = 4;
+    // make sure spawn protection stays on during countdown
+    spawnProtectionRemainingTicks = 9999;
+
     // reset snake pos to random position
     isInvisibleForOthers = true;
     snake = generateRandomSnake();
@@ -182,30 +191,18 @@
   // show countdown
   function startCountdown() {
     countdown--;
-    if (countdown > 0 && countdown <= 3) {
+    if (countdown > 0) {
       // countdown visible
       sendInfo(countdown);
-      //document.getElementById('status').innerHTML = countdown;
-      setTimeout(startCountdown, 500);
-      return;
-    } else if (countdown > 0) {
-      // "Get ready!" visible
-      //document.getElementById('status').innerHTML = "Get ready!";
-      sendInfo("Get ready!");
-      setTimeout(startCountdown, 500);
+      setTimeout(startCountdown, 1000);
       return;
     } else {
-      // if there is a snake on our position, wait for it to go away
-      if (checkForCollisionWithOtherSnakes()) {
-        countdown = -1;
-        //document.getElementById('status').innerHTML = "Waiting for other snake to go away...";
-        sendInfo("Waiting for other snake to go away...", color="Red");
-        setTimeout(startCountdown, 50);
-        return;
-      }
-
       // countdown is finished, we don't need to wait
       countdown = 0;
+      
+      // reset spawn protection
+      spawnProtectionRemainingTicks = SPAWN_PROTECTION_TICKS;
+      setPlayerData(snake);
 
       isInvisibleForOthers = false;
 
@@ -290,6 +287,8 @@
       // move the snake (change values in array, and handle key presses)
       move_snake();
     }
+
+    if (spawnProtectionRemainingTicks > 0) spawnProtectionRemainingTicks--;
   }
 
   // generate a random snake array which is 5 long (only start point is random, other 4 are relative to start point)
@@ -436,7 +435,7 @@
       if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
     }
     // check for collisions with other players
-    if (checkForCollisionWithOtherSnakes()) return true;
+    if (spawnProtectionRemainingTicks <= 0 && checkForCollisionWithOtherSnakes()) return true;
 
     // check for collission with wall
     const hitLeftWall = snake[0].x < 0;
@@ -745,17 +744,36 @@
     snakeboardCtx.fillRect(0, 0, snakeboardMaxX, snakeboardMaxY);
   }
 
+  // get the color of a snake, this also adds blinking effect if spawn protect is active
+  function getSnakeColorWithBrightness(colorName, hasSpawnProtection) {
+    let color = new Color(colorName.toLowerCase());
+    
+    if (hasSpawnProtection) color.alpha = Math.abs(foodLightness) * 2 / 100;
+
+    return color;
+  }
+
   // Draw the snake on the canvas
   function drawSnake() {
     // empty
     if (snake.length == 0) return;
 
+    color = getSnakeColorWithBrightness(mySnakeCol, spawnProtectionRemainingTicks > 0);
+
     // Draw each part
     let headDir = myHeadDir;
     snake.forEach(part => {
-      drawSnakePart(mySnakeCol, part, headDir);
+      drawSnakePart(color, part, headDir);
       headDir = undefined;
     })
+  }
+
+  function getMaxContrastColor(colorName) {
+    let color = new Color(colorName);
+    let withBlack = color.contrastWCAG21(new Color( '#000' ));
+    let withWhite = color.contrastWCAG21(new Color( '#fff' ));
+    let hex = ( withBlack >= withWhite ) ? '#000' : '#fff';
+    return new Color( hex );
   }
 
   // Draw one snake part
@@ -772,7 +790,7 @@
     snakeboardCtx.strokeRect(snakePart.x, snakePart.y, DELTA, DELTA);
 
     if (headDir != undefined) {
-      snakeboardCtx.fillStyle = snake_col.toLowerCase() === "black" ? "white" : "black";
+      snakeboardCtx.fillStyle = getMaxContrastColor(snake_col);
       snakeboardCtx.beginPath();
 
       switch (headDir) {
@@ -962,18 +980,17 @@
   // get the current food color with the blink effect
   function currentFoodLightness(foodColor) {
     // prevent lightness from being to big
-    if (foodLightness > 50) {
+    if (foodLightness >= 50) {
       foodLightness = -50;
     }
 
-    let hsv = {
-      h: foodColor == FOOD_LEVEL_RANDOM_COLOR ? ((foodLightness + 50) / 100) * 360 : foodColor,
-      s: 100,
-      v: foodColor == FOOD_LEVEL_RANDOM_COLOR ? 100 : Math.abs(foodLightness) + 50,
-    };
-    let color = Color( hsv );
+    let color = new Color("hsv", [
+      foodColor == FOOD_LEVEL_RANDOM_COLOR ? ((foodLightness + 50) / 100) * 360 : foodColor,
+      100,
+      foodColor == FOOD_LEVEL_RANDOM_COLOR ? 100 : Math.abs(foodLightness) + 50
+    ]);
 
-    return color.toString();
+    return color.to("srgb");
   }
 
   // get the color for a food by the food level
@@ -1101,7 +1118,9 @@
       let headDir = otherSnake["headDir"];
       // update each parts
       otherSnake["pos"].forEach(part => {
-        drawSnakePart(otherSnake["color"] == null ? "red" : otherSnake["color"], part, headDir);
+        let color = getSnakeColorWithBrightness(otherSnake["color"] == null ? "red" : otherSnake["color"], otherSnake["hasSpawnProtection"]);
+
+        drawSnakePart(color, part, headDir);
         headDir = undefined;
       });
     }
@@ -1110,13 +1129,13 @@
   // check if the player collides with any other player
   function checkForCollisionWithOtherSnakes() {
     for (let playerName in otherSnakes) {
-      let otherSnake = otherSnakes[playerName]["pos"];
+      let otherSnakePos = otherSnakes[playerName]["pos"];
 
-      if (otherSnake == null) continue;
+      if (otherSnakePos == null || otherSnakes[playerName]["hasSpawnProtection"]) continue;
 
       // player collided?
-      for (let i = 0; i < otherSnake.length; i++) {
-        if (otherSnake[i].x === snake[0].x && otherSnake[i].y === snake[0].y) return true;
+      for (let i = 0; i < otherSnakePos.length; i++) {
+        if (otherSnakePos[i].x === snake[0].x && otherSnakePos[i].y === snake[0].y) return true;
       }
     }
     return false;
@@ -1128,6 +1147,7 @@
     if (name) {
       firebaseMain.ref("snake/players/" + name + "/pos").set(snakeData);
       firebaseMain.ref("snake/players/" + name + "/headDir").set(myHeadDir);
+      firebaseMain.ref("snake/players/" + name + "/hasSpawnProtection").set(spawnProtectionRemainingTicks > 0);
     }
   }
 
