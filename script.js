@@ -45,90 +45,90 @@
 
 
   // is the version checking finished?
-  var versionChecked = false;
+  let versionChecked = false;
 
   // the db version
-  var dbVersion = 0;
+  let dbVersion = 0;
 
   // the time of the last graphics update
-  var timeLastGraphicsUpdate = 0;
+  let timeLastGraphicsUpdate = 0;
 
   // is the game ended?
-  var isGameEnded = false;
+  let isGameEnded = false;
 
   // countdown before start
-  var countdown = 6;
+  let countdown = 6;
 
   // can we send data to database (we should be invisible for other players
   // in countdown sequence, but visible for ourself)
-  var isInvisibleForOthers = true;
+  let isInvisibleForOthers = true;
 
   // our snake color
-  var mySnakeCol;
+  let mySnakeCol;
 
   // in which direction our head is facing
-  var myHeadDir = HEAD_DIR_RIGHT;
+  let myHeadDir = HEAD_DIR_RIGHT;
 
   // the head dir that will be applied at the next move
-  var requestedHeadDir = HEAD_DIR_NO_CHANGE;
+  let requestedHeadDir = HEAD_DIR_NO_CHANGE;
 
   // the head dir that will be applied at the next next move, used to cache input to make input smoother
-  var requestedNextHeadDir = HEAD_DIR_NO_CHANGE;
+  let requestedNextHeadDir = HEAD_DIR_NO_CHANGE;
 
   // the player name
-  var name = "";
+  let name = "";
 
   // is the name already set and checked from db?
-  var nameQuerySuccess = false;
+  let nameQuerySuccess = false;
 
   // our snake
-  var snake = [];
+  let snake = [];
 
   // the last score we had, to display it after death in title
-  var lastScore = 0;
+  let lastScore = 0;
 
   // horizontal snake move delta
-  var deltaX = DELTA;
+  let deltaX = DELTA;
 
   // vertical snake move delta
-  var deltaY = 0;
+  let deltaY = 0;
 
   // the other players
-  var otherSnakes = [];
+  let otherSnakes = [];
 
   // the last snake updates with timestamps from this browser, so a wrong browser time does not affect offline kicking
-  var otherSnakesLastUpdates = [];
+  let otherSnakesLastUpdates = [];
 
   // used to count online (registered) players
-  var allSnakes = [];
+  let allSnakes = [];
 
   // was the other snake data initialized from db?
-  var firstInitOtherSnakes = false;
+  let firstInitOtherSnakes = false;
 
   // food positions
-  var foods = [];
+  let foods = [];
 
   // how long should the snake tail stay in place, after a food was eaten?
-  var tailWaitCount = 0;
+  let tailWaitCount = 0;
 
   // color of food (it will be in rainbow mode)
-  var foodLightness = 0;
+  let foodLightness = 0;
 
   // if not negative, only this type of food will spawn
-  var forcedFoodLevel = -1;
+  let forcedFoodLevel = -1;
 
   // food count multiplied by this factor
-  var foodFactor = 1;
+  let foodFactor = 1;
 
   // the calculated width and height of the canvas (based on screen size)
-  var snakeboardCalculatedWidth;
-  var snakeboardCalculatedHeight;
+  let snakeboardCalculatedWidth;
+  let snakeboardCalculatedHeight;
 
   // the last update we received from the db (to check if other player is lagging or we are)
-  var lastOwnDBUpdate = -1;
+  let lastOwnDBUpdate = -1;
 
   // the web app's Firebase configuration
-  var firebaseConfig = {
+  let firebaseConfig = {
     apiKey: "AIzaSyBbRpK_BcltEmRQzLAUCFykMHEq5PQWWz4",
     authDomain: "psyched-canto-311609.firebaseapp.com",
     databaseURL: "https://psyched-canto-311609-default-rtdb.europe-west1.firebasedatabase.app",
@@ -139,10 +139,10 @@
   };
 
   // main connection to the firebase database
-  var firebaseMain;
+  let firebaseMain;
 
   // used to check if other player or ourself is lagging
-  var firebaseOnlineChecker;
+  let firebaseOnlineChecker;
 
 
 
@@ -217,18 +217,18 @@
   // the game loop
   function loop() {
     // the current time
-    var timeNow = Date.now();
+    let timeNow = Date.now();
     // the time estimated since last update
-    var timeEstimated = timeNow - timeLastGraphicsUpdate;
+    let timeEstimated = timeNow - timeLastGraphicsUpdate;
 
     if (timeEstimated >= SNAKE_UPDATE_DELAY) {
       // the time, we were waiting too long
-      var timeTooLong = timeEstimated - SNAKE_UPDATE_DELAY;
+      let timeTooLong = timeEstimated - SNAKE_UPDATE_DELAY;
 
       // the count, how often we have to call the tick method, based on the time, we were waiting too long, at least one time
-      var loopCount = Math.max(1, Math.round(timeTooLong / SNAKE_UPDATE_DELAY));
+      let loopCount = Math.max(1, Math.round(timeTooLong / SNAKE_UPDATE_DELAY));
 
-      for (var i = 0; i < loopCount; i++) {
+      for (let i = 0; i < loopCount; i++) {
         // tick the game
         tick();
       }
@@ -245,7 +245,7 @@
       // only run if we are not behind the db ourself
       if (Math.round(Date.now() / 1000) - lastOwnDBUpdate < 5) {
         // check if all other players are actually still active. If not, we delete the entries from the DB.
-        for (var playerName in otherSnakesLastUpdates) {
+        for (let playerName in otherSnakesLastUpdates) {
           // inactive for 10 seconds
           if (Math.round(Date.now() / 1000) - otherSnakesLastUpdates[playerName] > 10) {
             // delete the entry
@@ -295,14 +295,14 @@
   // generate a random snake array which is 5 long (only start point is random, other 4 are relative to start point)
   function generateRandomSnake() {
     // getting random coordinates, in x direction with a distance of min 4 gaps to the wall
-    var randomX = randomCoordinateX(4);
-    var randomY = randomCoordinateY();
+    let randomX = randomCoordinateX(4);
+    let randomY = randomCoordinateY();
     // the coordinates for the snake, we will calculate
-    var snakeCoords = [];
+    let snakeCoords = [];
 
     // just fill the array with 5 coordinate pairs, the x is descending, the higher the key is
-    for (var i = 0; i<5; i++) {
-      var currentPart = i * DELTA;
+    for (let i = 0; i<5; i++) {
+      let currentPart = i * DELTA;
       snakeCoords[i] = {x: randomX - currentPart, y: randomY};
     }
 
@@ -322,18 +322,18 @@
 
     if (ateFood) {
       // handle collection of food and get the count, how many parts must be added
-      var count = foodLevelToCount(handleFoodCollect()) - 1;
+      let count = foodLevelToCount(handleFoodCollect()) - 1;
 
       if (count < 0) {
         // we need to remove parts
-        for (var i = 0; i > count; i--) {
+        for (let i = 0; i > count; i--) {
           // but if the snake has just a length of 1, we don't remove more
           if (getArrayLength(snake) == 1) break;
           snake.pop();
         }
       } else {
         // we need to add parts, so add the count to our wait count so the end will stop
-        // and wait until the var is zero again
+        // and wait until the variable is zero again
         tailWaitCount += count;
       }
 
@@ -361,7 +361,7 @@
 
   // change the "walking" direction of the snake
   function userChangeDirection(up, left, down, right) {
-    var newHeadDir;
+    let newHeadDir;
 
     // going up
     if (up) {
@@ -376,8 +376,6 @@
     } else if (right) {
       newHeadDir = HEAD_DIR_RIGHT;
     }
-
-    console.log(newHeadDir);
 
     changeDir(false, newHeadDir);
   }
@@ -434,7 +432,7 @@
   // check for collission with wall, other snakes, oneself
   function checkForCollision() {
     // check for collsison with oneself
-    for (var i = 4; i < snake.length; i++) {
+    for (let i = 4; i < snake.length; i++) {
       if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
     }
     // check for collisions with other players
@@ -450,9 +448,9 @@
 
   // check if a player has eaten a food
   function hasEatenFood() {
-    var ateFood = false;
-    for (var foodKey in foods) {
-      var food = foods[foodKey];
+    let ateFood = false;
+    for (let foodKey in foods) {
+      let food = foods[foodKey];
       if(snake[0].x === food.x && snake[0].y === food.y) {
         ateFood = true;
         break;
@@ -477,13 +475,13 @@
   // remove a food, this will also return the level of the food removed
   function removeFood(x, y) {
     // the new food data
-    var newFoods = [];
+    let newFoods = [];
     // the food level of the removed food
-    var foodLevel = FOOD_LEVEL_RANDOM;
+    let foodLevel = FOOD_LEVEL_RANDOM;
 
     i = 0;
-    for (var foodKey in foods) {
-      var food = foods[foodKey];
+    for (let foodKey in foods) {
+      let food = foods[foodKey];
       // getting the data of the other food
       foodX = food.x;
       foodY = food.y;
@@ -505,15 +503,15 @@
   // handle the collection of food, this will also return the level of the removed food
   function handleFoodCollect() {
     // removing old food
-    var removedOldFoodLevel = removeFood(snake[0].x, snake[0].y);
+    let removedOldFoodLevel = removeFood(snake[0].x, snake[0].y);
 
     // creating new food
-    var foodCount = Math.max(1, Math.round(getActivePlayers() / 2)) * foodFactor;
+    let foodCount = Math.max(1, Math.round(getActivePlayers() / 2)) * foodFactor;
     foodCount = foodCount - foods.length;
 
-    for (var i = 0; i < foodCount; i++) {
-      var randomFood;
-      var noFoodPosFound = true;
+    for (let i = 0; i < foodCount; i++) {
+      let randomFood;
+      let noFoodPosFound = true;
 
       // search for a food pos, which isn't in use
       while (noFoodPosFound) {
@@ -524,8 +522,8 @@
           noFoodPosFound = false;
 
         // check all other food positions to avoid overlap
-        for (var foodKey in foods) {
-          var food = foods[foodKey];
+        for (let foodKey in foods) {
+          let food = foods[foodKey];
           if (food.x != randomFood.x || food.y != randomFood.y)
             noFoodPosFound = false;
         }
@@ -541,9 +539,9 @@
   // generate a new random food location
   function genFood() {
     // Generate a random number the food x-coordinate
-    var foodX = randomCoordinateX();
+    let foodX = randomCoordinateX();
     // Generate a random number for the food y-coordinate
-    var foodY = randomCoordinateY();
+    let foodY = randomCoordinateY();
 
     // if the new food location is where the snake currently is, generate a new food location
     snake.forEach((part) => {
@@ -565,8 +563,8 @@
     if (getArrayLength(snake) <= 5)
       return;
 
-    for (var key in snake) {
-      var pos = snake[key];
+    for (let key in snake) {
+      let pos = snake[key];
 
       // ignore this pos, if it is in the wall...
       if ((pos.x < 0 || pos.x > (snakeboardMaxX - DELTA))
@@ -656,13 +654,13 @@
 
   // if the snakeboard is clicked, get the pos of the click and send it
   function onSnakeboardClick(e) {
-    var canvas = snakeboard;
+    let canvas = snakeboard;
     // abs. size of element
-    var rect = canvas.getBoundingClientRect();
+    let rect = canvas.getBoundingClientRect();
     // relationship bitmap vs. element for X
-    var scaleX = snakeboardCalculatedWidth / snakeboardMaxX;
+    let scaleX = snakeboardCalculatedWidth / snakeboardMaxX;
     // relationship bitmap vs. element for Y
-    var scaleY = snakeboardCalculatedHeight / snakeboardMaxY;
+    let scaleY = snakeboardCalculatedHeight / snakeboardMaxY;
 
     const x = (e.touches[0].clientX - rect.left) / scaleX;
     const y = (e.touches[0].clientY - rect.top) / scaleY;
@@ -708,16 +706,16 @@
   // resize the snakeboard, based on the size of the window
   function resizeSnakeboard() {
     // calculate the max width and height
-    var widthMax = window.innerWidth * 0.8 - 32;
-    var heightMax = window.innerHeight * 0.86 - 16;
+    let widthMax = window.innerWidth * 0.8 - 32;
+    let heightMax = window.innerHeight * 0.86 - 16;
     
 
     // calculate aspect ratio
-    var aspectRatio = snakeboardMaxX / snakeboardMaxY;
+    let aspectRatio = snakeboardMaxX / snakeboardMaxY;
 
     // only allow the smallest width, to be full size
-    var widthFactorMax = snakeboardMaxX / widthMax;
-    var heightFactorMax = snakeboardMaxY / heightMax;
+    let widthFactorMax = snakeboardMaxX / widthMax;
+    let heightFactorMax = snakeboardMaxY / heightMax;
 
     // the other size (which is too big to fit on the monitor) will shrink,
     // but it will also consider the aspect ratio
@@ -753,7 +751,7 @@
     if (snake.length == 0) return;
 
     // Draw each part
-    var headDir = myHeadDir;
+    let headDir = myHeadDir;
     snake.forEach(part => {
       drawSnakePart(mySnakeCol, part, headDir);
       headDir = undefined;
@@ -814,8 +812,8 @@
   // draw the food
   function drawFoods() {
     // draw all the foods
-    for (var foodKey in foods) {
-      var food = foods[foodKey];
+    for (let foodKey in foods) {
+      let food = foods[foodKey];
 
       snakeboardCtx.fillStyle = currentFoodLightness(getFoodColorByLevel(food.level));
       snakeboardCtx.strokestyle = 'black';
@@ -829,13 +827,13 @@
 
   // update side status bar
   function updateSideBar() {
-    var scores = [];
-    var formattedScore = "";
+    let scores = [];
+    let formattedScore = "";
 
     i = 0;
     // put all the scores and the player name in array
-    for (var playerName in allSnakes) {
-      var score = ((getArrayLength(allSnakes[playerName]["pos"]) - 5));
+    for (let playerName in allSnakes) {
+      let score = ((getArrayLength(allSnakes[playerName]["pos"]) - 5));
       lastScore = score >= 0 && playerName == name ? score : lastScore;
 
       scores[i] = {
@@ -849,14 +847,14 @@
     scores.sort((a, b) => b.score - a.score);
 
     // loop threw the sorted array
-    for (var scoreKey in scores) {
+    for (let scoreKey in scores) {
       // getting the entry
-      var scoreData = scores[scoreKey];
+      let scoreData = scores[scoreKey];
 
       // and getting player name, score and the snake data
-      var score = scoreData["score"];
-      var playerName = scoreData["playerName"];
-      var snakeData = allSnakes[playerName];
+      let score = scoreData["score"];
+      let playerName = scoreData["playerName"];
+      let snakeData = allSnakes[playerName];
 
       // add the data as html to the score string
       formattedScore += "<span id=\"scoreboard\" style=\"color:" + snakeData["color"] + ";\">"
@@ -872,7 +870,7 @@
     // show
     //document.getElementById('status').style.visibility = 'visible';
     // set text
-    var content = '<div id="innerStatus" style="color: ' + color + ';">' + str + '</div>';
+    let content = '<div id="innerStatus" style="color: ' + color + ';">' + str + '</div>';
     document.getElementById('status').innerHTML = content;
     if (duration > 0) {
       setTimeout(() => {
@@ -925,20 +923,20 @@
 
   // get random color for our snake, that isn't used
   function getRandomColor() {
-    var unusedColors = getUnusedColors();
+    let unusedColors = getUnusedColors();
 
-    var color = unusedColors[randomInt(0, unusedColors.length - 1)];
+    let color = unusedColors[randomInt(0, unusedColors.length - 1)];
     return color;
   }
 
   // get all colors, which aren't used by any player
   function getUnusedColors() {
-    var usedColors = [];
-    var unusedColors = [];
+    let usedColors = [];
+    let unusedColors = [];
 
     // getting all used colors
-    var i = 0;
-    for (var playerName in otherSnakes) {
+    let i = 0;
+    for (let playerName in otherSnakes) {
       otherSnake = otherSnakes[playerName];
 
       if (otherSnake == null || otherSnake["color"] == null) continue;
@@ -950,7 +948,7 @@
     // looping threw all available colors, then checking if the color
     // is in the list of used colors, if it isn't, the color is unused
     i = 0
-    for (var colorName in COLORS) {
+    for (let colorName in COLORS) {
       if (!Array.from(usedColors).includes(COLORS[colorName])) {
         unusedColors[i] = COLORS[colorName];
         i++;
@@ -968,12 +966,12 @@
       foodLightness = -50;
     }
 
-    var hsv = {
+    let hsv = {
       h: foodColor == FOOD_LEVEL_RANDOM_COLOR ? ((foodLightness + 50) / 100) * 360 : foodColor,
       s: 100,
       v: foodColor == FOOD_LEVEL_RANDOM_COLOR ? 100 : Math.abs(foodLightness) + 50,
     };
-    var color = Color( hsv );
+    let color = Color( hsv );
 
     return color.toString();
   }
@@ -1000,7 +998,7 @@
       return forcedFoodLevel;
     }
 
-    var rnd = randomInt(0, 300);
+    let rnd = randomInt(0, 300);
 
     if (rnd >= 0 && rnd < 100) {
       // less and medium are most common
@@ -1049,8 +1047,8 @@
   // get the length of an iterable object
   function getArrayLength(array) {
     // looping threw all content of the all snakes, to get length
-    var len = 0;
-    for (var ignored in array) len++;
+    let len = 0;
+    for (let ignored in array) len++;
     return len;
   }
 
@@ -1072,11 +1070,11 @@
 
   // get the players, currently playing
   function getActivePlayers() {
-    var count = 0;
+    let count = 0;
 
     // go threw all snakes
-    for (var playerName in allSnakes) {
-      var snake = allSnakes[playerName];
+    for (let playerName in allSnakes) {
+      let snake = allSnakes[playerName];
 
       // check if the snake is playing, by checking if there are positions set
       if (snake.pos != null && getArrayLength(snake.pos) != 0) count++;
@@ -1095,12 +1093,12 @@
 
   // save the movement of other snakes to array
   function handleOtherSnakes() {
-    for (var playerName in otherSnakes) {
-      var otherSnake = otherSnakes[playerName];
+    for (let playerName in otherSnakes) {
+      let otherSnake = otherSnakes[playerName];
 
       if (otherSnake == null || otherSnake["pos"] == null) continue;
 
-      var headDir = otherSnake["headDir"];
+      let headDir = otherSnake["headDir"];
       // update each parts
       otherSnake["pos"].forEach(part => {
         drawSnakePart(otherSnake["color"] == null ? "red" : otherSnake["color"], part, headDir);
@@ -1111,13 +1109,13 @@
 
   // check if the player collides with any other player
   function checkForCollisionWithOtherSnakes() {
-    for (var playerName in otherSnakes) {
-      var otherSnake = otherSnakes[playerName]["pos"];
+    for (let playerName in otherSnakes) {
+      let otherSnake = otherSnakes[playerName]["pos"];
 
       if (otherSnake == null) continue;
 
       // player collided?
-      for (var i = 0; i < otherSnake.length; i++) {
+      for (let i = 0; i < otherSnake.length; i++) {
         if (otherSnake[i].x === snake[0].x && otherSnake[i].y === snake[0].y) return true;
       }
     }
@@ -1174,9 +1172,9 @@
         return;
       }
 
-      var newArray = [];
+      let newArray = [];
       // we ignore ourself, so we have to put it in a new array, without ourself
-      for (var playerName in data) {
+      for (let playerName in data) {
         if (playerName == name) {
           // update our own color
           mySnakeCol = data[playerName]["color"];
@@ -1204,7 +1202,7 @@
       if (data == null) {
         return;
       }
-      for (var playerName in data) {
+      for (let playerName in data) {
         if (playerName == name) {
           let newUpdate = data[playerName]["lastUpdate"];
           // check when the database last registered input from us
@@ -1334,7 +1332,7 @@
 
     // loop until user chose a name, that is not empty and not taken
     while (name == "") {
-      var tempName = prompt("Choose a player name:\n\n\".\", \"/\", \"#\", \"$\", \"[\", or \"]\" will be replaced by \"_\".");
+      let tempName = prompt("Choose a player name:\n\n\".\", \"/\", \"#\", \"$\", \"[\", or \"]\" will be replaced by \"_\".");
       name = tempName == null ? "" : tempName;
 
       name = name.replaceAll(".", "_").replaceAll("#", "_").replaceAll("$", "_").replaceAll("[", "_").replaceAll("]", "_").replaceAll("/", "_");
