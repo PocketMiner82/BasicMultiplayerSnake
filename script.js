@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 25;
+  const VERSION = 26;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -44,7 +44,7 @@
   const DELTA = 20;
 
   // the amount of ticks a snake will have spawn protection after game start
-  const SPAWN_PROTECTION_TICKS = 300 * 1000 / SNAKE_UPDATE_DELAY;
+  const SPAWN_PROTECTION_TICKS = 3 * 1000 / SNAKE_UPDATE_DELAY;
 
 
   // is the version checking finished?
