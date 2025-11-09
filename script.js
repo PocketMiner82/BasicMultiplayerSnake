@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 27;
+  const VERSION = 28;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -746,7 +746,12 @@
 
   // get the color of a snake, this also adds blinking effect if spawn protect is active
   function getSnakeColorWithBrightness(colorName, hasSpawnProtection) {
-    let color = new Color(colorName.toLowerCase());
+    let color;
+    try {
+      color = new Color(colorName.toLowerCase());
+    } catch {
+      color = new Color("red");
+    }
     
     if (hasSpawnProtection) color.alpha = Math.abs(foodLightness) * 2 / 100;
 
@@ -1197,7 +1202,7 @@
       for (let playerName in data) {
         if (playerName == name) {
           // update our own color
-          mySnakeCol = data[playerName]["color"];
+          mySnakeCol = data[playerName]["color"] ? data[playerName]["color"] : mySnakeCol;
           continue;
         }
         newArray[playerName] = data[playerName];
