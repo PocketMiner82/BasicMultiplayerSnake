@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 28;
+  const VERSION = 29;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -1201,8 +1201,13 @@
       // we ignore ourself, so we have to put it in a new array, without ourself
       for (let playerName in data) {
         if (playerName == name) {
-          // update our own color
-          mySnakeCol = data[playerName]["color"] ? data[playerName]["color"] : mySnakeCol;
+          if (data[playerName]["color"]) {
+            // update our own color
+            mySnakeCol = data[playerName]["color"];
+          } else {
+            firebaseMain.ref("snake/players/" + name + "/color").set(mySnakeCol);
+          }
+
           continue;
         }
         newArray[playerName] = data[playerName];
@@ -1304,7 +1309,7 @@
     waitForPlayerData();
 }
 
-// wait to receive playerdata from other players
+  // wait to receive playerdata from other players
   function waitForPlayerData() {
     if (!firstInitOtherSnakes) {
       setTimeout(waitForPlayerData, 50);
@@ -1323,13 +1328,20 @@
       return;
     }
 
+    // always perform connectivity checks
+    firebaseMain.ref(".info/connected").on("value", (snapshot) => {
+      if (snapshot.val()) {
+        firebaseMain.ref("snake/players/" + name).onDisconnect().remove();
+        console.log("DB connected.");
+      } else {
+        console.log("DB disconnected.");
+      }
+    });
+
     // name set successfully, we can run the game now  and we need to save the name
     // in a separate key to get access to write our data later, this will also restrict
     // the access to this entry only for us
-    firebaseMain.ref("snake/players/" + name + "/verifyName").set(name);
-
-    // if player disconnect, remove data
-    firebaseMain.ref("snake/players/" + name).onDisconnect().remove();
+    //firebaseMain.ref("snake/players/" + name + "/verifyName").set(name);
 
     // generate random color for us
     mySnakeCol = getRandomColor();
