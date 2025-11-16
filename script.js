@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 29;
+  const VERSION = 30;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -37,11 +37,11 @@
   const snakeboardCtx = snakeboard.getContext("2d");
 
   // set the coordinate system dimensions (always 16:9)
-  const snakeboardMaxX = 1280;
-  const snakeboardMaxY = 720;
+  const snakeboardMaxX = 1920;
+  const snakeboardMaxY = 1080;
 
   // the default snake move delta and snake square size
-  const DELTA = 20;
+  const DELTA = 30;
 
   // the amount of ticks a snake will have spawn protection after game start
   const SPAWN_PROTECTION_TICKS = 3 * 1000 / SNAKE_UPDATE_DELAY;
@@ -193,7 +193,6 @@
     countdown--;
     if (countdown > 0) {
       // countdown visible
-      sendInfo(countdown);
       setTimeout(startCountdown, 1000);
       return;
     } else {
@@ -205,9 +204,6 @@
       setPlayerData(snake);
 
       isInvisibleForOthers = false;
-
-      // "Go" visible for 3 secs
-      sendInfo("Go!", 3000);
     }
   }
 
@@ -258,7 +254,7 @@
 
     updateSideBar();
 
-    clearBoard();
+    drawBoard();
     drawFoods();
     handleOtherSnakes();
 
@@ -334,17 +330,6 @@
         // we need to add parts, so add the count to our wait count so the end will stop
         // and wait until the variable is zero again
         tailWaitCount += count;
-      }
-
-      count++;
-
-      // show the player, how many points he got/lost
-      if (count > 0) {
-        sendInfo("+" + count, 1000, "LimeGreen");
-      } else if (count == 0) {
-        sendInfo("0", 1000);
-      } else if (count < 0) {
-        sendInfo(count, 1000, "Red");
       }
     } else if (tailWaitCount <= 0) {
       // remove the last part of snake body
@@ -597,11 +582,7 @@
     dropRandomFood();
     snake = [];
 
-    // show retry button and game over message
-    //document.getElementById('status').style.visibility = 'visible';
-    //document.getElementById('status').innerHTML = '<b><span style=\"color: tomato; display: inline;\"> Game Over!</span></b>';
-    sendInfo("Game Over!", 0, "Red");
-
+    // show retry button
     document.getElementById('score').style.visibility = 'visible';
     document.getElementById('score').innerHTML = 'Your score: ' + lastScore + '<button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
   }
@@ -704,44 +685,35 @@
 
   // resize the snakeboard, based on the size of the window
   function resizeSnakeboard() {
-    // calculate the max width and height
-    let widthMax = window.innerWidth * 0.8 - 32;
-    let heightMax = window.innerHeight * 0.86 - 16;
-    
+    // get the actual "on-screen" size of the canvas element which CSS has already calculated for us
+    const displayWidth = snakeboard.clientWidth;
+    const displayHeight = snakeboard.clientHeight;
 
-    // calculate aspect ratio
-    let aspectRatio = snakeboardMaxX / snakeboardMaxY;
+    // set the canvas's internal resolution to match. prevents stretching and blurriness
+    snakeboard.width = displayWidth;
+    snakeboard.height = displayHeight;
 
-    // only allow the smallest width, to be full size
-    let widthFactorMax = snakeboardMaxX / widthMax;
-    let heightFactorMax = snakeboardMaxY / heightMax;
-
-    // the other size (which is too big to fit on the monitor) will shrink,
-    // but it will also consider the aspect ratio
-    if (widthFactorMax > heightFactorMax) {
-      snakeboardCalculatedWidth = widthMax;
-      snakeboardCalculatedHeight = widthMax / aspectRatio;
-    } else if (heightFactorMax > widthFactorMax) {
-      snakeboardCalculatedWidth = heightMax * aspectRatio;
-      snakeboardCalculatedHeight = heightMax;
-    } else {
-      snakeboardCalculatedWidth = widthMax;
-      snakeboardCalculatedHeight = heightMax;
-    }
-
-    // set the calculated width and height
-    snakeboard.width = snakeboardCalculatedWidth;
-    snakeboard.height = snakeboardCalculatedHeight;
-    // set scale multiplier for x and y
-    snakeboardCtx.scale(snakeboardCalculatedWidth/snakeboardMaxX, snakeboardCalculatedHeight/snakeboardMaxY);
+    // re-apply context scaling
+    snakeboardCtx.scale(displayWidth / snakeboardMaxX, displayHeight / snakeboardMaxY);
   }
 
   // draw the canvas background
-  function clearBoard() {
-    //  select the color to fill the drawing
-    snakeboardCtx.fillStyle = BOARD_BACKGROUND;
-    // Draw a "filled" rectangle to cover the entire canvas
-    snakeboardCtx.fillRect(0, 0, snakeboardMaxX, snakeboardMaxY);
+  function drawBoard() {
+    // Clear canvas
+    snakeboardCtx.clearRect(0, 0, snakeboardMaxX, snakeboardMaxY);
+
+    // draw countdown if there
+    if (countdown > 0) {
+      snakeboardCtx.fillStyle = "white";
+      snakeboardCtx.font = "150px 'Outfit', sans-serif";
+
+      let cntText = countdown.toString();
+      let textSize = snakeboardCtx.measureText(cntText);
+      let textWidth = textSize.width;
+      let textHeight = textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent;
+
+      snakeboardCtx.fillText(cntText, snakeboardMaxX/2 - textWidth/2, snakeboardMaxY/2 );
+    }
   }
 
   // get the color of a snake, this also adds blinking effect if spawn protect is active
@@ -886,22 +858,6 @@
 
     document.getElementById('sidebar').innerHTML = "Online: " + getOnlinePlayers() + "/15<br><br>"
       + formattedScore;
-  }
-
-  // send an info to the status display
-  function sendInfo(str, duration=0, color="Black") {
-    // show
-    //document.getElementById('status').style.visibility = 'visible';
-    // set text
-    let content = '<div id="innerStatus" style="color: ' + color + ';">' + str + '</div>';
-    document.getElementById('status').innerHTML = content;
-    if (duration > 0) {
-      setTimeout(() => {
-        // hide, if the innerHTML is still the given string and color
-        if (document.getElementById('status').innerHTML === content)
-        document.getElementById('status').innerHTML = '<div id="innerStatus" style="color: transparent;">42</div';
-      }, duration);
-    }
   }
 
 

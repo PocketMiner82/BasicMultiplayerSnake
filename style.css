@@ -10,130 +10,124 @@
 }
 
 #html, body {
-    font-family: 'Outfit', sans-serif;
-    /*background-image: url("https://www.pcgames.de/screenshots/medium/2022/07/Drachenlord_Juli2022-1-pc-games.jpg");*/
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-color: #252525;
-    color: white;
-    width: 100%;
-    height: 100%;
-    margin: 0px;
-    border: 0;
-    display: grid;
-    grid-template-rows: [row1-start] 8vh [row1-end row2-start] 78vh [row2-end row3-start] 5vh [row3-end];
-    grid-template-columns: [column1-start] 20vw [column1-end column2-start] 50vw [column2-end];
-    gap: 0px;
-  }
-  #snakeboard {
-    position: relative;
-    grid-column-start: column2-start;
-    grid-column-end: column2-end;
-    grid-row-start: row1-start;
-    grid-row-end: row1-end;
-    /*transform: translate(-100%, -50%);*/
-    background-color: #555555;
-    border: 2px solid #767676;
-    border-radius: 10px;
-  }
-  #sidebar {
-    grid-column-start: column1-start;
-    grid-column-end: column1-end;
-    grid-row-start: row2-start;
-    grid-row-end: row2-end;
-    background-color: #555555;
-    border: 2px solid #767676;
-    border-radius: 10px;
-    text-align: center;
-    font-size: 25px;
-    /*margin-left: 15px;
-    margin-top: 15px;*/
-  }
-  #status {
-    grid-column-start: column1-start;
-    grid-column-end: column1-end;
-    grid-row-start: row1-start;
-    grid-row-end: row1-end;
-    background-color: #8b8b8b;
-    border: 2px solid #cbcbcb;
-    border-radius: 10px;
-    /*font-size: 2.5vw;*/
-    /*width: 100%;
-    height: 100%;*/
-    margin: left;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    text-align: center;
-    justify-content: center;
-  }
+  font-family: 'Outfit', sans-serif;
+  /*background-image: url("https://www.pcgames.de/screenshots/medium/2022/07/Drachenlord_Juli2022-1-pc-games.jpg");*/
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-color: #252525;
+  color: white;
+  margin: 0px;
+  border: 0;
+  display: grid;
+  grid-template-columns: [column1-start] 15vw [column1-end column2-start] 70vw [column2-end column3-start] 15vw [column3-end];
+  grid-template-rows: [row1-start] 90vh [row1-end row2-start] 10vh [row2-end];
+  gap: 0px;
+}
 
-  #innerStatus {
-    font-size: 3.5vh;
-  }
+#snakeboard-container {
+  position: relative;
+  grid-column-start: column2-start;
+  grid-column-end: column3-end;
+  grid-row-start: row1-start;
+  grid-row-end: row1-end;
 
-  #retry {
-    background-color: #a9a9a9;
-    border-radius: 10px;
-    text-align: center;
-  }
-  #score {
-    grid-column-start: column2-start;
-    grid-column-end: column2-end;
-    grid-row-start: row3-start;
-    grid-row-end: row3-end;
-    font-size: 25px;
-    visibility: hidden;
-    text-align: center;
-  }
+  /* Use flexbox to center the canvas within this cell */
+  display: flex;
+  align-self: center;
+  
+  margin-right: 24px;
 
-  #scrollable {
-    position: absolute;
-    font-size: 50px;
-    visibility: hidden;
-    left: 50%;
-    bottom: -100px;
-    transform: translate(-50%, -50%);
-  }
+  aspect-ratio: 16 / 9;
+  background-color: none;
+  max-height: calc(100% - 16px);
+}
 
-  .button {
-    position: relative;
-    grid-column-start: column2-start;
-    grid-column-end: column2-end;
-    grid-row-start: row3-start;
-    grid-row-end: row3-end;
-    border: none;
-    color: white;
-    padding: 10px 10px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: -6px 16px;
-    transition-duration: 0.4s;
-    cursor: pointer;
-  }
+#snakeboard {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #555555;
+  box-sizing: border-box;
+  border: 2px solid #767676;
+  border-radius: 10px;
+}
 
-  .retry {
-    background-color: #555555;
-    color: black;
-    border: 2px solid #bebebe;
-    border-radius: 8px;
-    transition: all 0.3s;
-  }
+#sidebar {
+  grid-column-start: column1-start;
+  grid-column-end: column1-end;
+  grid-row-start: row1-start;
+  grid-row-end: row1-end;
+  background-color: #555555;
+  border: 2px solid #767676;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 25px;
+}
 
-  .retry:hover {
-    background-color: #5ec161;
-    color: white;
-  }
+#retry {
+  background-color: #a9a9a9;
+  border-radius: 10px;
+  text-align: center;
+}
 
-  #scoreboard{
-    grid-column-start: column1-start;
-    grid-column-end: column2-end;
-    grid-row-start: row2-start;
-    grid-row-end: row3-end;
-    background-color: #797979;
-    padding: 0.5px;
-    margin: 0.5px;
-    border-radius: 10px;
-  }
+#score {
+  grid-column-start: column2-start;
+  grid-column-end: column2-end;
+  grid-row-start: row2-start;
+  grid-row-end: row2-end;
+  font-size: 25px;
+  visibility: hidden;
+  text-align: center;
+  align-self: center;
+}
+
+#scrollable {
+  position: absolute;
+  font-size: 50px;
+  visibility: hidden;
+  left: 50%;
+  bottom: -100px;
+  transform: translate(-50%, -50%);
+}
+
+.button {
+  position: relative;
+  grid-column-start: column2-start;
+  grid-column-end: column2-end;
+  grid-row-start: row3-start;
+  grid-row-end: row3-end;
+  border: none;
+  color: white;
+  padding: 10px 10px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: -6px 16px;
+  transition-duration: 0.4s;
+  cursor: pointer;
+}
+
+.retry {
+  background-color: #555555;
+  color: white;
+  border: 2px solid #bebebe;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.retry:hover {
+  background-color: #5ec161;
+  color: black;
+}
+
+#scoreboard{
+  grid-column-start: column1-start;
+  grid-column-end: column2-end;
+  grid-row-start: row2-start;
+  grid-row-end: row3-end;
+  background-color: #797979;
+  padding: 0.5px;
+  margin: 0.5px;
+  border-radius: 10px;
+}
