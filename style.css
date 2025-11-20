@@ -14,7 +14,7 @@
   /*background-image: url("https://www.pcgames.de/screenshots/medium/2022/07/Drachenlord_Juli2022-1-pc-games.jpg");*/
   background-repeat: no-repeat;
   background-size: cover;
-  background-color: #252525;
+  background-color: black;
   color: white;
   margin: 0px;
   border: 0;
@@ -46,9 +46,9 @@
   margin: 0;
   width: 100%;
   height: 100%;
-  background-color: #555555;
+  background-color: #252525;
   box-sizing: border-box;
-  border: 2px solid #767676;
+  border: 2px solid #555555;
   border-radius: 10px;
 }
 
@@ -57,15 +57,15 @@
   grid-column-end: column1-end;
   grid-row-start: row1-start;
   grid-row-end: row1-end;
-  background-color: #555555;
-  border: 2px solid #767676;
+  background-color: #252525;
+  border: 2px solid #555555;
   border-radius: 10px;
   text-align: center;
   font-size: 25px;
 }
 
 #retry {
-  background-color: #a9a9a9;
+  background-color: #555555;
   border-radius: 10px;
   text-align: center;
 }

@@ -1,8 +1,6 @@
 ! function() {
   const VERSION = 31;
 
-  const BOARD_BACKGROUND = "#555555";
-
   const COLORS = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange",
   "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
 
@@ -250,18 +248,17 @@
 
     updateSideBar();
 
-    drawBoard();
+    clearBoard();
+
     drawFoods();
+    
     handleOtherSnakes();
 
     // we always need to draw the snake, so if it's there, it will be shown
     drawSnake();
 
-    // retry button clicked
-    if (retryClicked) {
-      retryClicked = false;
-      onRetry();
-    }
+    // text should be always on top
+    drawText();
 
     setTimeout(loop, 5);
   }
@@ -580,7 +577,8 @@
 
     // show retry button
     document.getElementById('score').style.visibility = 'visible';
-    document.getElementById('score').innerHTML = 'Your score: ' + lastScore + '<button id="buttonRetry" class="button retry" onclick="onRetryClick()">Retry (r)</button>';
+    document.getElementById('score').innerHTML = 'Your score: ' + lastScore + '<button id="buttonRetry" class="button retry">Retry (r)</button>';
+    document.getElementById('buttonRetry').addEventListener("click", () => onRetry());
   }
 
   // called, when the window is resized by user
@@ -694,22 +692,9 @@
   }
 
   // draw the canvas background
-  function drawBoard() {
+  function clearBoard() {
     // Clear canvas
     snakeboardCtx.clearRect(0, 0, snakeboardMaxX, snakeboardMaxY);
-
-    // draw countdown if there
-    if (countdown > 0) {
-      snakeboardCtx.fillStyle = "white";
-      snakeboardCtx.font = "150px 'Outfit', sans-serif";
-
-      let cntText = countdown.toString();
-      let textSize = snakeboardCtx.measureText(cntText);
-      let textWidth = textSize.width;
-      let textHeight = textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent;
-
-      snakeboardCtx.fillText(cntText, snakeboardMaxX/2 - textWidth/2, snakeboardMaxY/2 );
-    }
   }
 
   // get the color of a snake, this also adds blinking effect if spawn protect is active
@@ -854,6 +839,53 @@
 
     document.getElementById('sidebar').innerHTML = "Online: " + getOnlinePlayers() + "/15<br><br>"
       + formattedScore;
+  }
+
+  function drawText() {
+    // draw countdown if there
+    if (countdown > 0) {
+      snakeboardCtx.font = "150px 'Outfit', sans-serif";
+      snakeboardCtx.fillStyle = "white";
+
+      let cntText = countdown.toString();
+      let textSize = snakeboardCtx.measureText(cntText);
+      let textWidth = textSize.width;
+
+      snakeboardCtx.fillText(cntText, snakeboardMaxX/2 - textWidth/2, snakeboardMaxY/2);
+    }
+
+    // draw the collected food text for all snakes
+    for (let playerName in allSnakes) {
+      let sn = allSnakes[playerName];
+      let collectedFoodScores = sn["collectedFoodScores"];
+      //collectedFoodScores = [{score: 1}, {score: 4}, {score: 0}, {score: -3}];
+      snakeboardCtx.font = "24px 'Outfit', sans-serif";
+
+      if (collectedFoodScores && sn["pos"] && sn["pos"][0]) {
+        let headPos = sn["pos"][0];
+
+        let currentYOffset = 5;
+        for(let key in collectedFoodScores) {
+          scoreObj = collectedFoodScores[key];
+
+          let scoreText = (scoreObj.score >= 0 ? "+" : "") + scoreObj.score.toString();
+          let textSize = snakeboardCtx.measureText(scoreText);
+          let textWidth = textSize.width;
+          let textHeight = textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent;
+          let textX = headPos.x + DELTA/2 - textWidth/2;
+          let textY = headPos.y - currentYOffset;
+
+          snakeboardCtx.fillStyle = "#555555";
+          snakeboardCtx.beginPath();
+          snakeboardCtx.roundRect(textX - 2, textY - DELTA / 2 - 7, textWidth + 4, textHeight - 2, 5);
+          snakeboardCtx.fill();
+
+          snakeboardCtx.fillStyle = scoreObj.score > 0 ? "lawngreen" : (scoreObj.score == 0 ? "white" : "red");
+          snakeboardCtx.fillText(scoreText, headPos.x + DELTA/2 - textWidth/2, textY);
+          currentYOffset += textHeight - 2;
+        }
+      }
+    }
   }
 
 
@@ -1046,7 +1078,7 @@
   function getActivePlayers() {
     let count = 0;
 
-    // go threw all snakes
+    // go through all snakes
     for (let playerName in allSnakes) {
       let snake = allSnakes[playerName];
 
@@ -1061,7 +1093,7 @@
   function checkMaxPlayerCount() {
     // max 15 players
     while (getOnlinePlayers() >= MAX_PLAYERS) {
-      alert("The game is full (15/15). Click the button, to retry.");
+      alert("The game is full (15/15). Click OK to retry.");
     }
   }
 
@@ -1212,7 +1244,7 @@
 
     alert("We use cookies. By using this site, you agree with it.\n"
       + "\n"
-      + "We use the Realtime Database of Google Firebase, to serve multiplayer. If you want to know how Google proceeds your data, look on their page: https://firebase.google.com/support/privacy/\n"
+      + "We use the Realtime Database of Google Firebase to serve multiplayer. If you want to know how Google proceeds your data, look on their page: https://firebase.google.com/support/privacy/\n"
       + "\n"
       + "If you don't want to agree, close this site. No data has been saved yet.");
 
