@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 32;
+  const VERSION = 33;
 
   const COLORS = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange",
   "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
@@ -536,7 +536,7 @@
     // if the new food location is where the snake currently is, generate a new food location
     snake.forEach((part) => {
       const isOccupied = part.x == foodX && part.y == foodY;
-      if (isOccupied) genFood();
+      if (isOccupied) return genFood();
     });
 
     // if the new food location is where another snake currently is, generate a new food location
@@ -545,7 +545,7 @@
       if (otherSnakePos) {
         otherSnakePos.forEach((part) => {
           const isOccupied = part.x == foodX && part.y == foodY;
-          if (isOccupied) genFood();
+          if (isOccupied) return genFood();
         });
       }
     }
@@ -1198,7 +1198,9 @@
       // this display will be removed after 15 ticks
       ticksRemaining: 15
     };
-    collectedFoodScores.push(collectedFood);
+  
+    // first element of array will be displayed nearest to head
+    collectedFoodScores.unshift(collectedFood);
 
     return foodScore;
   }
