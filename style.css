@@ -30,13 +30,10 @@
   grid-column-end: column3-end;
   grid-row-start: row1-start;
   grid-row-end: row1-end;
-
   /* Use flexbox to center the canvas within this cell */
   display: flex;
   align-self: center;
-  
   margin-right: 24px;
-
   aspect-ratio: 16 / 9;
   background-color: none;
   max-height: calc(100% - 16px);

@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 31;
+  const VERSION = 32;
 
   const COLORS = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange",
   "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
@@ -111,6 +111,9 @@
 
   // food positions
   let foods = [];
+
+  // the last collected scores for foods with remaining time to be displayed
+  let collectedFoodScores = [];
 
   // how long should the snake tail stay in place, after a food was eaten?
   let tailWaitCount = 0;
@@ -278,6 +281,16 @@
     }
 
     if (spawnProtectionRemainingTicks > 0) spawnProtectionRemainingTicks--;
+
+    // decrease the remaining visible time of the food score displays and remove expired ones
+    for (let i = collectedFoodScores.length - 1; i >= 0; i--) {
+      let score = collectedFoodScores[i];
+      score.ticksRemaining--;
+      
+      if (score.ticksRemaining <= 0) {
+        collectedFoodScores.splice(i, 1);
+      }
+    }
   }
 
   // generate a random snake array which is 5 long (only start point is random, other 4 are relative to start point)
@@ -310,7 +323,7 @@
 
     if (ateFood) {
       // handle collection of food and get the count, how many parts must be added
-      let count = foodLevelToCount(handleFoodCollect()) - 1;
+      let count = addCollectedFoodScoreToDB(foodLevelToCount(handleFoodCollect())) - 1;
 
       if (count < 0) {
         // we need to remove parts
@@ -522,15 +535,20 @@
 
     // if the new food location is where the snake currently is, generate a new food location
     snake.forEach((part) => {
-      const has_eaten = part.x == foodX && part.y == foodY;
-      if (has_eaten) genFood();
+      const isOccupied = part.x == foodX && part.y == foodY;
+      if (isOccupied) genFood();
     });
 
     // if the new food location is where another snake currently is, generate a new food location
-    otherSnakes.forEach((part) => {
-      const has_eaten = part.x == foodX && part.y == foodY;
-      if (has_eaten) genFood();
-    });
+    for (let playerName in otherSnakes) {
+      let otherSnakePos = otherSnakes[playerName]["pos"];
+      if (otherSnakePos) {
+        otherSnakePos.forEach((part) => {
+          const isOccupied = part.x == foodX && part.y == foodY;
+          if (isOccupied) genFood();
+        });
+      }
+    }
 
     return {"x": foodX, "y": foodY}
   }
@@ -857,33 +875,52 @@
     // draw the collected food text for all snakes
     for (let playerName in allSnakes) {
       let sn = allSnakes[playerName];
-      let collectedFoodScores = sn["collectedFoodScores"];
-      //collectedFoodScores = [{score: 1}, {score: 4}, {score: 0}, {score: -3}];
-      snakeboardCtx.font = "24px 'Outfit', sans-serif";
-
-      if (collectedFoodScores && sn["pos"] && sn["pos"][0]) {
-        let headPos = sn["pos"][0];
-
-        let currentYOffset = 5;
-        for(let key in collectedFoodScores) {
-          scoreObj = collectedFoodScores[key];
-
-          let scoreText = (scoreObj.score >= 0 ? "+" : "") + scoreObj.score.toString();
-          let textSize = snakeboardCtx.measureText(scoreText);
-          let textWidth = textSize.width;
-          let textHeight = textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent;
-          let textX = headPos.x + DELTA/2 - textWidth/2;
-          let textY = headPos.y - currentYOffset;
-
-          snakeboardCtx.fillStyle = "#555555";
-          snakeboardCtx.beginPath();
-          snakeboardCtx.roundRect(textX - 2, textY - DELTA / 2 - 7, textWidth + 4, textHeight - 2, 5);
-          snakeboardCtx.fill();
-
-          snakeboardCtx.fillStyle = scoreObj.score > 0 ? "lawngreen" : (scoreObj.score == 0 ? "white" : "red");
-          snakeboardCtx.fillText(scoreText, headPos.x + DELTA/2 - textWidth/2, textY);
-          currentYOffset += textHeight - 2;
-        }
+      let scores = sn["collectedFoodScores"];
+      //scores = [{score: 1}, {score: 4}, {score: 0}, {score: -3}];
+      
+      if (!scores || !sn["pos"] || !sn["pos"][0]) continue;
+      
+      snakeboardCtx.font = "bold 32px 'Outfit', sans-serif";
+      let headPos = sn["pos"][0];
+      
+      // calculate constants
+      const PADDING_X = 6;
+      const PADDING_Y = 6;
+      const CORNER_RADIUS = 7;
+      
+      // determine direction based on head position
+      const isBelowCenter = headPos.y > snakeboardMaxY / 2;
+      let currentYOffset = isBelowCenter ? DELTA + 2 : -DELTA - PADDING_Y - 2;
+      
+      for (let key in scores) {
+        const scoreObj = scores[key];
+        const scoreText = (scoreObj.score >= 0 ? "+" : "") + scoreObj.score.toString();
+        
+        // measure text dimensions
+        const metrics = snakeboardCtx.measureText(scoreText);
+        const textWidth = metrics.width;
+        const textHeight = metrics.actualBoundingBoxDescent + metrics.actualBoundingBoxAscent;
+        
+        // calculate rectangle position with bounds checking
+        let rectX = headPos.x + DELTA/2 - textWidth/2 - PADDING_X;
+        rectX = Math.max(PADDING_X, Math.min(snakeboardMaxX - textWidth - PADDING_X*3, rectX));
+        
+        let rectY = headPos.y - currentYOffset - PADDING_Y;
+        
+        const rectWidth = textWidth + (PADDING_X*2);
+        const rectHeight = textHeight + (PADDING_Y*2);
+        
+        // draw background rectangle
+        snakeboardCtx.fillStyle = "#444444";
+        snakeboardCtx.beginPath();
+        snakeboardCtx.roundRect(rectX, rectY, rectWidth, rectHeight, CORNER_RADIUS);
+        snakeboardCtx.fill();
+        
+        // draw text
+        snakeboardCtx.fillStyle = scoreObj.score > 0 ? "lime" : (scoreObj.score == 0 ? "white" : "red");
+        snakeboardCtx.fillText(scoreText, rectX + PADDING_X, rectY + textHeight + PADDING_Y);
+        
+        currentYOffset += isBelowCenter ? rectHeight + 2 : -rectHeight - 2;
       }
     }
   }
@@ -1137,6 +1174,7 @@
       firebaseMain.ref("snake/players/" + name + "/pos").set(snakeData);
       firebaseMain.ref("snake/players/" + name + "/headDir").set(myHeadDir);
       firebaseMain.ref("snake/players/" + name + "/hasSpawnProtection").set(spawnProtectionRemainingTicks > 0);
+      firebaseMain.ref("snake/players/" + name + "/collectedFoodScores").set(collectedFoodScores);
     }
   }
 
@@ -1151,6 +1189,18 @@
   // save the foods data to database
   function updateFoods() {
     firebaseMain.ref("snake/foods").set(foods);
+  }
+
+  // adds the score of a food collection to be pushed to the database
+  function addCollectedFoodScoreToDB(foodScore) {
+    collectedFood = {
+      score: foodScore,
+      // this display will be removed after 15 ticks
+      ticksRemaining: 15
+    };
+    collectedFoodScores.push(collectedFood);
+
+    return foodScore;
   }
 
   // set the listeners for firebase
