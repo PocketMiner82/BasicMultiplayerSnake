@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 30;
+  const VERSION = 31;
 
   const BOARD_BACKGROUND = "#555555";
 
@@ -125,10 +125,6 @@
 
   // food count multiplied by this factor
   let foodFactor = 1;
-
-  // the calculated width and height of the canvas (based on screen size)
-  let snakeboardCalculatedWidth;
-  let snakeboardCalculatedHeight;
 
   // the last update we received from the db (to check if other player is lagging or we are)
   let lastOwnDBUpdate = -1;
@@ -638,9 +634,9 @@
     // abs. size of element
     let rect = canvas.getBoundingClientRect();
     // relationship bitmap vs. element for X
-    let scaleX = snakeboardCalculatedWidth / snakeboardMaxX;
+    let scaleX = snakeboard.width / snakeboardMaxX;
     // relationship bitmap vs. element for Y
-    let scaleY = snakeboardCalculatedHeight / snakeboardMaxY;
+    let scaleY = snakeboard.height / snakeboardMaxY;
 
     const x = (e.touches[0].clientX - rect.left) / scaleX;
     const y = (e.touches[0].clientY - rect.top) / scaleY;
