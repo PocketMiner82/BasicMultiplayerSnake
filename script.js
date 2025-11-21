@@ -1,5 +1,8 @@
 ! function() {
-  const VERSION = 33;
+  const VERSION = 34;
+
+  // the program will attempt to achieve these FPS. max is 1000
+  const TARGET_FPS = 125;
 
   const COLORS = ["Aqua", "Yellow", "Red", "Black", "White", "DeepPink", "LawnGreen", "Orange",
   "SaddleBrown", "OrangeRed", "DarkViolet", "Gold", "Indigo", "Silver", "DarkGreen"];
@@ -51,8 +54,11 @@
   // the db version
   let dbVersion = 0;
 
-  // the time of the last graphics update
-  let timeLastGraphicsUpdate = 0;
+  // the time of the last game tick
+  let timeLastTick = 0;
+
+  // the amount of ticks since game started
+  let tickCount = 0;
 
   // is the game ended?
   let isGameEnded = false;
@@ -127,6 +133,9 @@
   // food count multiplied by this factor
   let foodFactor = 1;
 
+  // the amount of updates since the last fps counter update, used to calculate average fps since the last five ticks
+  let fpsData = {timeLastFPSUpdate: 0, count: 0};
+
   // the last update we received from the db (to check if other player is lagging or we are)
   let lastOwnDBUpdate = -1;
 
@@ -166,7 +175,7 @@
   // reset everything and start the game
   function startGame() {
     // reset the last graphics update time to now
-    timeLastGraphicsUpdate = Date.now();
+    timeLastTick = performance.now();
     // reset countdown
     countdown = 4;
     // make sure spawn protection stays on during countdown
@@ -207,37 +216,40 @@
   // the game loop
   function loop() {
     // the current time
-    let timeNow = Date.now();
-    // the time estimated since last update
-    let timeEstimated = timeNow - timeLastGraphicsUpdate;
+    let timeNow = performance.now();
+    // the time elapsed since last tick
+    let timespanSinceLastTick = timeNow - timeLastTick;
 
-    if (timeEstimated >= SNAKE_UPDATE_DELAY) {
+    // calculate the fps for the last shown frame
+    fpsData.count++;
+
+    if (timespanSinceLastTick >= SNAKE_UPDATE_DELAY) {
       // the time, we were waiting too long
-      let timeTooLong = timeEstimated - SNAKE_UPDATE_DELAY;
+      let timeTooLong = timespanSinceLastTick - SNAKE_UPDATE_DELAY;
 
       // the count, how often we have to call the tick method, based on the time, we were waiting too long, at least one time
       let loopCount = Math.max(1, Math.round(timeTooLong / SNAKE_UPDATE_DELAY));
 
       for (let i = 0; i < loopCount; i++) {
         // tick the game
-        tick();
+        tick(timeNow);
       }
 
       // send playerdata just once after the for loop, if snake is set
       if (snake.length != 0) setPlayerData(snake);
 
-      // set the last update time to now
-      timeLastGraphicsUpdate = Date.now();
+      // set the last tick time to now
+      timeLastTick = performance.now();
 
-      // send last update time to DB so that other players know if this player is still active
-      setLastUpdate(timeLastGraphicsUpdate);
+      // send last tick time to DB so that other players know if this player is still active
+      setLastUpdate(timeLastTick);
 
       // only run if we are not behind the db ourself
-      if (Math.round(Date.now() / 1000) - lastOwnDBUpdate < 5) {
+      if (Math.round(performance.now() / 1000) - lastOwnDBUpdate < 5) {
         // check if all other players are actually still active. If not, we delete the entries from the DB.
         for (let playerName in otherSnakesLastUpdates) {
           // inactive for 10 seconds
-          if (Math.round(Date.now() / 1000) - otherSnakesLastUpdates[playerName] > 10) {
+          if (Math.round(performance.now() / 1000) - otherSnakesLastUpdates[playerName] > 10) {
             // delete the entry
             firebaseMain.ref("snake/players/" + playerName).remove();
           }
@@ -263,11 +275,13 @@
     // text should be always on top
     drawText();
 
-    setTimeout(loop, 5);
+    // attempt to always run the loop around the target fps by subtracting the time this function took to run from the target
+    let nextUpdateIn = Math.max(0, (1000 / TARGET_FPS) - (performance.now() - timeNow));
+    setTimeout(loop, nextUpdateIn);
   }
 
   // tick the game
-  function tick() {
+  function tick(timeNow) {
     if (countdown != 0) {
       // wait for countdown finsih
     } else if (isGameEnded || snake.length <= 0 || checkForCollision()) {
@@ -286,11 +300,20 @@
     for (let i = collectedFoodScores.length - 1; i >= 0; i--) {
       let score = collectedFoodScores[i];
       score.ticksRemaining--;
-      
+
       if (score.ticksRemaining <= 0) {
         collectedFoodScores.splice(i, 1);
       }
     }
+
+    // update fps counter every 5 ticks and reset the fps sum
+    if (tickCount % 5 == 0) {
+      document.getElementById("fpsCounter").innerText = Math.round(fpsData.count / ((timeNow - fpsData.timeLastFPSUpdate) / 1000)) + " FPS";
+      fpsData.count = 0;
+      fpsData.timeLastFPSUpdate = timeNow;
+    }
+
+    tickCount++;
   }
 
   // generate a random snake array which is 5 long (only start point is random, other 4 are relative to start point)
@@ -1181,7 +1204,7 @@
   // save our playerdata to database
   function setLastUpdate() {
     // only update every second
-    let sec = Math.round(Date.now() / 1000);
+    let sec = Math.round(performance.now() / 1000);
 
     firebaseMain.ref("snake/players/" + name + "/lastUpdate").set(sec);
   }
@@ -1250,7 +1273,7 @@
 
         // check if the other snake updated since last run
         if ((otherSnakes[playerName] && newArray[playerName]["lastUpdate"] != otherSnakes[playerName]["lastUpdate"]) || !otherSnakesLastUpdates[playerName]) {
-          otherSnakesLastUpdates[playerName] = Math.round(Date.now() / 1000);
+          otherSnakesLastUpdates[playerName] = Math.round(performance.now() / 1000);
         }
       }
 
@@ -1389,8 +1412,8 @@
       addFood(randomCoordinateX(), randomCoordinateY(), randomFoodLevel());
 
     // first reset the last graphics update and db update time
-    timeLastGraphicsUpdate = Date.now();
-    lastOwnDBUpdate = Math.round(Date.now() / 1000);
+    timeLastTick = performance.now();
+    lastOwnDBUpdate = Math.round(performance.now() / 1000);
 
     // then start the main loop
     loop();

@@ -61,6 +61,16 @@
   font-size: 25px;
 }
 
+#fpsCounter {
+  grid-column-start: column1-start;
+  grid-column-end: column1-end;
+  grid-row-start: row2-start;
+  grid-row-end: row2-end;
+  font-size: 16px;
+  text-align: center;
+  align-self: center;
+}
+
 #retry {
   background-color: #555555;
   border-radius: 10px;
