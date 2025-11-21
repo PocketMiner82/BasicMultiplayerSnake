@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 35;
+  const VERSION = 36;
 
   // the program will attempt to achieve these FPS. max is 1000
   const TARGET_FPS = 125;
@@ -285,6 +285,11 @@
 
   // tick the game
   function tick(timeNow) {
+    // add food, if there is no food on the map
+    if (foods.length == 0) {
+      addFood(randomCoordinateX(), randomCoordinateY(), randomFoodLevel());
+    }
+
     if (countdown != 0) {
       // wait for countdown finsih
     } else if (isGameEnded || snake.length <= 0 || checkForCollision()) {
@@ -1417,10 +1422,6 @@
     mySnakeCol = getRandomColor();
 
     firebaseMain.ref("snake/players/" + name + "/color").set(mySnakeCol);
-
-    // handle food, if this is the first player
-    if (foods.length == 0)
-      addFood(randomCoordinateX(), randomCoordinateY(), randomFoodLevel());
 
     // first reset the last graphics update and db update time
     timeLastTick = performance.now();
