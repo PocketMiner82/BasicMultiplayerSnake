@@ -1,5 +1,5 @@
 ! function() {
-  const VERSION = 34;
+  const VERSION = 35;
 
   // the program will attempt to achieve these FPS. max is 1000
   const TARGET_FPS = 125;
@@ -21,6 +21,9 @@
   const FOOD_LEVEL_MEDIUM_COLOR = 110;
   const FOOD_LEVEL_MUCH_COLOR = 0;
   const FOOD_LEVEL_RANDOM_COLOR = -1;
+
+  // the maximum amount of food that will spawn
+  const MAX_FOOD_AMOUNT = 50;
 
   // max player count (currently, set to the amount of colors, available)
   const MAX_PLAYERS = COLORS.length;
@@ -475,6 +478,10 @@
 
   // save a new food position
   function addFood(x, y, level) {
+    if (foods.length >= MAX_FOOD_AMOUNT) {
+      return false;
+    }
+
     foods[foods.length] = {
       "x": x,
       "y": y,
@@ -483,6 +490,7 @@
     };
 
     updateFoods();
+    return true;
   }
 
   // remove a food, this will also return the level of the food removed
@@ -543,7 +551,9 @@
       }
 
       // and add it
-      addFood(randomFood.x, randomFood.y, randomFoodLevel());
+      if (!addFood(randomFood.x, randomFood.y, randomFoodLevel())) {
+        return;
+      }
     }
 
     return removedOldFoodLevel;
@@ -590,8 +600,9 @@
         continue;
 
       // drop random food at random positions in snake, ca. 16,67% probability to drop for each
-      if (randomInt(0, 5) == 0)
-        addFood(pos.x, pos.y, randomFoodLevel());
+      if (randomInt(0, 5) == 0 && !addFood(pos.x, pos.y, randomFoodLevel())) {
+          return;
+      }
     }
   }
 
